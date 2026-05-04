@@ -1,0 +1,28 @@
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html, body, #root {
+    height: 100%;
+  }
+  body {
+    @apply font-sans text-ink-900 antialiased;
+    background: linear-gradient(180deg, #dbeafe 0%, #eff6ff 28%, #f8fafc 100%);
+    background-attachment: fixed;
+  }
+  button {
+    @apply select-none;
+  }
+  input, textarea {
+    @apply outline-none;
+  }
+}
+
+@layer utilities {
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
+  .scrollbar-hide { scrollbar-width: none; }
+  .safe-bottom { padding-bottom: max(env(safe-area-inset-bottom), 1rem); }
+}
