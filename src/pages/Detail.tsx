@@ -6,7 +6,7 @@ import { deleteMemo, getMemo, saveMemo } from '../db'
 import type { ChecklistItem, Memo } from '../types'
 import { MEMO_TYPE_META } from '../types'
 import { TopBar } from '../components/TopBar'
-import { PaperclipIcon, PinIcon, TrashIcon, TypeIconFor } from '../components/Icons'
+import { PaperclipIcon, PinIcon, TrashIcon } from '../components/Icons'
 
 export default function Detail() {
   const { id } = useParams()
@@ -63,14 +63,13 @@ export default function Detail() {
     <div className="pb-32">
       <TopBar
         back
-        subtitle={meta.label}
         title={memo.title || '제목 없음'}
         right={
           <div className="flex items-center gap-1">
             <button
               onClick={togglePin}
               className={[
-                'p-2 rounded-full hover:bg-white/60',
+                'p-2 rounded-xl hover:bg-white/60',
                 memo.pinned ? 'text-amber-500' : 'text-ink-400',
               ].join(' ')}
               aria-label="고정"
@@ -79,7 +78,7 @@ export default function Detail() {
             </button>
             <Link
               to={`/memo/${memo.id}/edit`}
-              className="px-3 py-1.5 rounded-full bg-ink-900 text-white text-sm font-semibold"
+              className="px-3 py-1.5 rounded-xl bg-ink-900 text-white text-sm font-semibold"
             >
               편집
             </Link>
@@ -91,19 +90,19 @@ export default function Detail() {
       <div className="px-5 flex flex-wrap items-center gap-2 text-xs">
         <span
           className={[
-            'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full',
-            memo.type === 'note' && 'bg-note-100 text-note-600',
-            memo.type === 'checklist' && 'bg-check-100 text-check-600',
-            memo.type === 'todo' && 'bg-todo-100 text-todo-600',
+            'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl',
+            memo.type === 'note' && 'bg-note-100 text-note-700',
+            memo.type === 'checklist' && 'bg-check-100 text-check-700',
+            memo.type === 'todo' && 'bg-todo-100 text-todo-700',
           ]
             .filter(Boolean)
             .join(' ')}
         >
-          <TypeIconFor type={memo.type} width={12} height={12} />
-          {meta.label}
+          <span aria-hidden className="text-sm leading-none">{meta.emoji}</span>
+          <span className="font-medium">{meta.label}</span>
         </span>
         {memo.dueDate && (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white shadow-soft text-ink-700">
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-white shadow-soft text-ink-700">
             📅 {format(parseISO(memo.dueDate), 'yyyy년 M월 d일 (eee)', { locale: ko })}
           </span>
         )}
@@ -115,7 +114,7 @@ export default function Detail() {
       {/* Body */}
       {memo.body && (
         <section className="px-5 mt-5">
-          <div className="rounded-2xl bg-white shadow-soft border border-white/80 p-5">
+          <div className="rounded-xl bg-white shadow-soft border border-slate-200/80 p-5">
             <p className="text-[15px] leading-relaxed whitespace-pre-line text-ink-900">
               {memo.body}
             </p>
@@ -126,7 +125,7 @@ export default function Detail() {
       {/* Items */}
       {memo.items.length > 0 && (
         <section className="px-5 mt-4">
-          <div className="rounded-2xl bg-white shadow-soft border border-white/80 p-3">
+          <div className="rounded-xl bg-white shadow-soft border border-slate-200/80 p-3">
             <div className="text-xs font-semibold text-ink-500 mb-2 px-2">
               {memo.type === 'checklist' ? '체크리스트' : '세부 할 일'}
             </div>
@@ -162,7 +161,7 @@ export default function Detail() {
       {/* Attachments */}
       {memo.attachments.length > 0 && (
         <section className="px-5 mt-4">
-          <div className="rounded-2xl bg-white shadow-soft border border-white/80 p-3">
+          <div className="rounded-xl bg-white shadow-soft border border-slate-200/80 p-3">
             <div className="text-xs font-semibold text-ink-500 mb-2 px-2 inline-flex items-center gap-1">
               <PaperclipIcon width={12} height={12} />
               첨부파일 {memo.attachments.length}
@@ -202,7 +201,7 @@ export default function Detail() {
           <button
             onClick={() => void toggleDone()}
             className={[
-              'flex-1 py-3 rounded-2xl font-semibold shadow-soft',
+              'flex-1 py-3 rounded-xl font-semibold shadow-soft',
               memo.done
                 ? 'bg-white text-ink-700'
                 : 'bg-note-500 text-white',
@@ -213,7 +212,7 @@ export default function Detail() {
         )}
         <button
           onClick={() => void onDelete()}
-          className="px-4 py-3 rounded-2xl bg-white text-check-600 shadow-soft inline-flex items-center gap-1.5"
+          className="px-4 py-3 rounded-xl bg-white text-check-600 shadow-soft inline-flex items-center gap-1.5"
         >
           <TrashIcon width={18} height={18} /> 삭제
         </button>

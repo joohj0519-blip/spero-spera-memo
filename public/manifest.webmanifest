@@ -1,0 +1,20 @@
+{
+  "name": "spero spera",
+  "short_name": "spero spera",
+  "description": "메모 · 체크리스트 · 할 일",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#dbeafe",
+  "theme_color": "#dbeafe",
+  "lang": "ko",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

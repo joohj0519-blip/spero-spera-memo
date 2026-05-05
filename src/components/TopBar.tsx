@@ -15,12 +15,12 @@ export function TopBar({
 }) {
   const navigate = useNavigate()
   return (
-    <header className="px-5 pt-6 pb-3 flex items-start justify-between gap-3">
+    <header className="px-5 pt-[44px] pb-3 flex items-start justify-between gap-3">
       <div className="flex items-start gap-2 min-w-0">
         {back && (
           <button
             onClick={() => navigate(-1)}
-            className="-ml-2 mt-1 p-2 rounded-full text-ink-700 hover:bg-white/60"
+            className="-ml-2 mt-1 p-2 rounded-xl text-ink-700 hover:bg-white/60"
             aria-label="뒤로"
           >
             <BackIcon />
@@ -28,7 +28,7 @@ export function TopBar({
         )}
         <div className="min-w-0">
           {subtitle && <div className="text-sm text-ink-500">{subtitle}</div>}
-          {title && <h1 className="text-2xl font-bold text-ink-900 truncate">{title}</h1>}
+          {title && <h1 className="text-2xl font-semibold text-ink-900 truncate">{title}</h1>}
         </div>
       </div>
       {right ?? (

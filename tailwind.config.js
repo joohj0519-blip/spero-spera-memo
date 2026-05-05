@@ -4,7 +4,13 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Pretendard', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],
+        sans: ['"Pretendard Variable"', 'Pretendard', '"Noto Sans KR"', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],
+      },
+      borderRadius: {
+        // 프레임 둥글기 ~5% 톤으로 다운
+        'xl': '0.625rem',   // 10px (was 12px)
+        '2xl': '0.875rem',  // 14px (was 16px)
+        '3xl': '1.125rem',  // 18px (was 24px)
       },
       colors: {
         ink: {

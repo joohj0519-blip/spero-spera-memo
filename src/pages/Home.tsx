@@ -1,151 +1,130 @@
 import { Link } from 'react-router-dom'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import { listMemos } from '../db'
 import type { Memo, MemoType } from '../types'
-import { TopBar } from '../components/TopBar'
-import { MemoCard } from '../components/MemoCard'
-import { NoteIcon, CheckIcon, TargetIcon, SearchIcon, PlusIcon } from '../components/Icons'
 
-const greet = () => {
-  const h = new Date().getHours()
-  if (h < 6) return '늦은 밤이에요'
-  if (h < 12) return '좋은 아침이에요'
-  if (h < 18) return '좋은 오후예요'
-  return '좋은 저녁이에요'
-}
+const dateLine = format(new Date(), 'yyyy.MM.dd · eee', { locale: ko })
 
-const todayLabel = format(new Date(), 'M월 d일 EEEE', { locale: ko })
-
-const categoryClasses: Record<MemoType, { bg: string; text: string }> = {
-  note: { bg: 'bg-note-500', text: 'text-white' },
-  checklist: { bg: 'bg-check-500', text: 'text-white' },
-  todo: { bg: 'bg-todo-500', text: 'text-white' },
-}
-
-function CategoryCard({ type, label }: { type: MemoType; label: string }) {
-  const Icon = type === 'note' ? NoteIcon : type === 'checklist' ? CheckIcon : TargetIcon
-  const c = categoryClasses[type]
-  return (
-    <Link
-      to={`/new?type=${type}`}
-      className="flex-1 rounded-2xl bg-white shadow-soft hover:shadow-card transition-shadow border border-white/80 p-3"
-    >
-      <div className={`w-11 h-11 rounded-xl ${c.bg} ${c.text} grid place-items-center shadow-soft`}>
-        <Icon width={22} height={22} strokeWidth={2} />
-      </div>
-      <div className="mt-3 text-[11px] text-ink-400 font-medium">오늘</div>
-      <div className="mt-0.5 font-bold text-ink-900">{label}</div>
-    </Link>
-  )
+const actionMeta: Record<MemoType, { emoji: string; label: string; desc: string; iconBg: string }> = {
+  note: {
+    emoji: '📝',
+    label: '메모 작성',
+    desc: '자유롭게 적어두기',
+    iconBg: 'bg-emerald-100',
+  },
+  checklist: {
+    emoji: '✅',
+    label: '체크리스트',
+    desc: '항목별로 정리하기',
+    iconBg: 'bg-rose-100',
+  },
+  todo: {
+    emoji: '🎯',
+    label: '할 일 추가',
+    desc: '오늘의 미션',
+    iconBg: 'bg-sky-100',
+  },
 }
 
 export default function Home() {
   const [memos, setMemos] = useState<Memo[]>([])
-  const [q, setQ] = useState('')
 
   useEffect(() => {
     void listMemos().then(setMemos)
   }, [])
 
-  const filtered = useMemo(() => {
-    if (!q.trim()) return memos
-    const needle = q.trim().toLowerCase()
-    return memos.filter((m) =>
-      [m.title, m.body, ...m.items.map((i) => i.text)].some((s) =>
-        s.toLowerCase().includes(needle),
-      ),
-    )
-  }, [memos, q])
-
-  const pinned = filtered.filter((m) => m.pinned)
-  const recent = filtered.filter((m) => !m.pinned).slice(0, 6)
+  const todoOpen = memos.filter((m) => m.type === 'todo' && !m.done).length
+  const isEmpty = memos.length === 0
 
   return (
-    <div className="pb-32">
-      <TopBar title={greet()} subtitle={todayLabel} />
-
-      <div className="px-5 mt-2">
-        <div className="flex gap-3">
-          <CategoryCard type="note" label="메모 작성" />
-          <CategoryCard type="checklist" label="체크리스트" />
-          <CategoryCard type="todo" label="할 일 추가" />
-        </div>
-      </div>
-
-      <div className="px-5 mt-6">
-        <label className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-white shadow-soft border border-white/80">
-          <SearchIcon className="text-ink-400" />
-          <input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="메모를 검색해보세요..."
-            className="flex-1 bg-transparent text-sm placeholder:text-ink-400"
-          />
-        </label>
-      </div>
-
-      {pinned.length > 0 && (
-        <section className="px-5 mt-7">
-          <h2 className="font-bold text-ink-900 mb-3">고정한 메모</h2>
-          <div className="space-y-2.5">
-            {pinned.map((m) => (
-              <MemoCard key={m.id} memo={m} />
-            ))}
-          </div>
-        </section>
-      )}
-
-      <section className="px-5 mt-7">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="font-bold text-ink-900">최근 메모</h2>
-          {memos.length > 6 && (
-            <Link to="/all" className="text-xs text-ink-500 hover:text-ink-700">
-              전체 보기
-            </Link>
-          )}
+    <div className="flex-1 flex flex-col min-h-full">
+      {/* ──── Cover (top ~1/2) ──── */}
+      <section className="flex-1 flex flex-col px-6 pt-10 pb-4 relative overflow-hidden">
+        <div className="text-[12px] tracking-[0.18em] text-ink-500 font-medium relative z-20">
+          {dateLine}
         </div>
 
-        {memos.length === 0 ? (
-          <EmptyState />
-        ) : recent.length === 0 ? (
-          <p className="text-sm text-ink-500 px-1">검색 결과가 없어요.</p>
-        ) : (
-          <div className="space-y-2.5">
-            {recent.map((m) => (
-              <MemoCard key={m.id} memo={m} />
-            ))}
-          </div>
-        )}
+        {/* Title — 디스크 바로 아래에 'S' 가 오도록 (손→디스크→S 세로 정렬) */}
+        <div className="absolute left-[calc(36%-60px)] bottom-[calc(16%-20px)] text-left z-10 whitespace-nowrap">
+          <h1 className="font-semibold text-ink-900 leading-none tracking-tight text-[53px]">
+            SPERO SPERA<span className="text-amber-500">.</span>
+          </h1>
+          <p className="mt-3 text-[14px] text-ink-500 tracking-wide text-right">
+            <span className="italic">dum spiro, spero</span>
+            <span className="mx-1.5 text-ink-300">·</span>
+            <span>숨쉬는 한, 희망한다</span>
+          </p>
+        </div>
+
+        {/* Character — 좌측 바닥, 작게(75%) 해서 날짜 안 가리도록 */}
+        <img
+          src={`${import.meta.env.BASE_URL}img/character.png`}
+          alt=""
+          aria-hidden="true"
+          className="absolute select-none pointer-events-none z-30"
+          style={{
+            left: '-12px',
+            bottom: 0,
+            height: '75%',
+            maxHeight: 460,
+          }}
+          draggable={false}
+        />
       </section>
 
-      <Link
-        to="/new"
-        className="fixed bottom-24 right-6 z-40 w-14 h-14 rounded-full bg-ink-900 text-white grid place-items-center shadow-card hover:scale-105 transition-transform"
-        aria-label="새 메모"
-      >
-        <PlusIcon width={26} height={26} strokeWidth={2.2} />
-      </Link>
+      {/* ──── Actions (bottom ~1/2) ──── */}
+      <section className="shrink-0 px-5 pb-8">
+        <p className="px-1 mb-3 text-xs text-ink-500">
+          {isEmpty ? (
+            '오늘부터 시작하기 좋아요'
+          ) : (
+            <>
+              <b className="text-ink-900 font-semibold">{memos.length}</b>
+              <span className="mx-1">개의 메모</span>
+              {todoOpen > 0 && (
+                <>
+                  <span className="mx-2 text-ink-300">·</span>
+                  <span>오늘 할 일 </span>
+                  <b className="text-ink-900 font-semibold">{todoOpen}</b>
+                </>
+              )}
+            </>
+          )}
+        </p>
+        <div className="space-y-2">
+          {(Object.keys(actionMeta) as MemoType[]).map((t) => (
+            <ActionRow key={t} type={t} />
+          ))}
+        </div>
+      </section>
     </div>
   )
 }
 
-function EmptyState() {
+function ActionRow({ type }: { type: MemoType }) {
+  const m = actionMeta[type]
   return (
-    <div className="rounded-2xl bg-white/70 border border-white/80 shadow-soft p-8 text-center">
-      <div className="text-4xl mb-2">🌤️</div>
-      <p className="font-semibold text-ink-900">아직 메모가 없어요</p>
-      <p className="mt-1 text-sm text-ink-500">
-        오늘의 생각, 할 일, 체크리스트를 가볍게 적어보세요.
-      </p>
-      <Link
-        to="/new"
-        className="inline-flex items-center gap-1.5 mt-4 px-4 py-2 rounded-full bg-ink-900 text-white text-sm font-medium shadow-soft"
+    <Link
+      to={`/new?type=${type}`}
+      className="group flex items-center gap-4 rounded-xl bg-white/90 border border-slate-200/80 shadow-soft hover:shadow-card active:scale-[0.995] transition-all px-4 py-3.5"
+    >
+      <div
+        className={[
+          'shrink-0 w-12 h-12 rounded-xl grid place-items-center text-2xl',
+          m.iconBg,
+        ].join(' ')}
       >
-        <PlusIcon width={16} height={16} strokeWidth={2.4} />
-        새 메모 만들기
-      </Link>
-    </div>
+        <span aria-hidden>{m.emoji}</span>
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="font-semibold text-ink-900">{m.label}</p>
+        <p className="text-xs text-ink-500 mt-0.5">{m.desc}</p>
+      </div>
+      <span className="text-ink-400 group-hover:text-ink-900 group-hover:translate-x-0.5 transition-all text-xl leading-none">
+        ›
+      </span>
+    </Link>
   )
 }

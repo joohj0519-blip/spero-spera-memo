@@ -4,7 +4,7 @@ import { fileToDataUrl, getMemo, newId, saveMemo } from '../db'
 import type { Attachment, ChecklistItem, Memo, MemoType } from '../types'
 import { MEMO_TYPE_META } from '../types'
 import { TopBar } from '../components/TopBar'
-import { CheckIcon, NoteIcon, PaperclipIcon, PlusIcon, TargetIcon, TrashIcon } from '../components/Icons'
+import { PaperclipIcon, PlusIcon, TrashIcon } from '../components/Icons'
 
 const empty = (type: MemoType): Memo => ({
   id: newId(),
@@ -18,11 +18,13 @@ const empty = (type: MemoType): Memo => ({
   updatedAt: Date.now(),
 })
 
-const TYPE_TABS: { type: MemoType; Icon: typeof NoteIcon }[] = [
-  { type: 'note', Icon: NoteIcon },
-  { type: 'checklist', Icon: CheckIcon },
-  { type: 'todo', Icon: TargetIcon },
-]
+const TYPE_TABS: MemoType[] = ['note', 'checklist', 'todo']
+
+const TITLE_EN: Record<MemoType, string> = {
+  note: 'MEMO',
+  checklist: 'CHECKLIST',
+  todo: 'TO DO',
+}
 
 export default function Editor() {
   const { id } = useParams()
@@ -32,7 +34,6 @@ export default function Editor() {
   const [memo, setMemo] = useState<Memo>(() => empty(initialType))
   const [loaded, setLoaded] = useState(!id)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const isEditing = !!id
 
   useEffect(() => {
     if (!id) return
@@ -100,28 +101,25 @@ export default function Editor() {
     return <div className="p-8 text-ink-500">불러오는 중…</div>
   }
 
-  const meta = MEMO_TYPE_META[memo.type]
-
   return (
     <div className="pb-40">
       <TopBar
         back
-        subtitle={isEditing ? '메모 편집' : '새 메모'}
-        title={meta.label}
+        title={TITLE_EN[memo.type]}
         right={
           <button
             onClick={onSave}
-            className="px-4 py-2 rounded-full bg-ink-900 text-white text-sm font-semibold shadow-soft"
+            className="px-4 py-2 rounded-xl bg-ink-900 text-white text-sm font-semibold shadow-soft"
           >
             저장
           </button>
         }
       />
 
-      {/* Type tabs */}
-      <div className="px-5">
-        <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-1 px-1">
-          {TYPE_TABS.map(({ type, Icon }) => {
+      {/* Type tabs — 3등분 */}
+      <div className="px-5 mt-4">
+        <div className="grid grid-cols-3 gap-2">
+          {TYPE_TABS.map((type) => {
             const active = memo.type === type
             const m = MEMO_TYPE_META[type]
             return (
@@ -129,17 +127,17 @@ export default function Editor() {
                 key={type}
                 onClick={() => update('type', type)}
                 className={[
-                  'flex items-center gap-2 px-4 py-2 rounded-full whitespace-nowrap border transition-colors',
+                  'flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl border transition-colors',
                   active
                     ? type === 'note'
                       ? 'bg-note-500 text-white border-note-500'
                       : type === 'checklist'
                         ? 'bg-check-500 text-white border-check-500'
                         : 'bg-todo-500 text-white border-todo-500'
-                    : 'bg-white text-ink-700 border-white shadow-soft',
+                    : 'bg-white text-ink-700 border-slate-200/80 shadow-soft',
                 ].join(' ')}
               >
-                <Icon width={16} height={16} strokeWidth={2} />
+                <span aria-hidden className="text-base leading-none">{m.emoji}</span>
                 <span className="text-sm font-medium">{m.label}</span>
               </button>
             )
@@ -148,17 +146,17 @@ export default function Editor() {
       </div>
 
       {/* Title */}
-      <div className="px-5 mt-5">
+      <div className="px-5 mt-10">
         <input
           value={memo.title}
           onChange={(e) => update('title', e.target.value)}
           placeholder="제목을 입력하세요"
-          className="w-full bg-transparent text-2xl font-bold text-ink-900 placeholder:text-ink-400"
+          className="w-full bg-transparent text-2xl font-semibold text-ink-900 placeholder:text-ink-400"
         />
       </div>
 
-      {/* Date */}
-      <div className="px-5 mt-3 flex items-center gap-2">
+      {/* Date / Pin / Add item */}
+      <div className="px-5 mt-3 flex flex-wrap items-center gap-2">
         <DateField
           value={memo.dueDate}
           onChange={(v) => update('dueDate', v)}
@@ -166,13 +164,26 @@ export default function Editor() {
         <button
           onClick={() => update('pinned', !memo.pinned)}
           className={[
-            'px-3 py-1.5 rounded-full text-xs font-medium border transition-colors',
+            'ml-auto px-3 py-1.5 rounded-xl text-xs font-medium border transition-colors',
             memo.pinned
               ? 'bg-amber-100 text-amber-700 border-amber-200'
-              : 'bg-white text-ink-500 border-white shadow-soft',
+              : 'bg-white text-ink-500 border-slate-200/80 shadow-soft',
           ].join(' ')}
         >
           📌 {memo.pinned ? '고정됨' : '고정하기'}
+        </button>
+        <button
+          onClick={() => {
+            if (memo.type === 'note') {
+              update('type', 'checklist')
+              update('items', [...memo.items, { id: newId(), text: '', checked: false }])
+            } else {
+              addItem()
+            }
+          }}
+          className="px-3 py-1.5 rounded-xl text-xs font-medium border bg-white text-ink-700 border-slate-200/80 shadow-soft hover:bg-ink-900/[0.03] transition-colors"
+        >
+          ＋ 메모 추가
         </button>
       </div>
 
@@ -183,14 +194,14 @@ export default function Editor() {
           onChange={(e) => update('body', e.target.value)}
           placeholder={memo.type === 'note' ? '내용을 자유롭게 적어보세요…' : '메모 (선택)'}
           rows={memo.type === 'note' ? 10 : 4}
-          className="w-full bg-white/70 rounded-2xl p-4 shadow-soft border border-white/80 text-[15px] leading-relaxed resize-none placeholder:text-ink-400"
+          className="w-full bg-white/70 rounded-xl p-4 shadow-soft border border-slate-200/80 text-[15px] leading-relaxed resize-none placeholder:text-ink-400"
         />
       </div>
 
       {/* Checklist / Todo items */}
       {(memo.type === 'checklist' || memo.type === 'todo') && (
         <div className="px-5 mt-4">
-          <div className="rounded-2xl bg-white shadow-soft border border-white/80 p-3">
+          <div className="rounded-xl bg-white shadow-soft border border-slate-200/80 p-3">
             <div className="text-xs font-semibold text-ink-500 mb-2 px-2">
               {memo.type === 'checklist' ? '체크리스트' : '세부 할 일'}
             </div>
@@ -242,7 +253,7 @@ export default function Editor() {
 
       {/* Attachments */}
       <div className="px-5 mt-4">
-        <div className="rounded-2xl bg-white shadow-soft border border-white/80 p-3">
+        <div className="rounded-xl bg-white shadow-soft border border-slate-200/80 p-3">
           <div className="flex items-center justify-between mb-2 px-2">
             <span className="text-xs font-semibold text-ink-500">첨부파일</span>
             <button
@@ -302,7 +313,7 @@ export default function Editor() {
 
 function DateField({ value, onChange }: { value?: string; onChange: (v: string | undefined) => void }) {
   return (
-    <label className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white shadow-soft border border-white/80 text-sm text-ink-700 cursor-pointer">
+    <label className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white shadow-soft border border-slate-200/80 text-sm text-ink-700 cursor-pointer">
       <span>📅</span>
       <input
         type="date"

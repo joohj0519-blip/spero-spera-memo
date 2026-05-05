@@ -56,7 +56,7 @@ export default function CalendarView() {
       <TopBar title={format(month, 'yyyy년 M월', { locale: ko })} subtitle="캘린더" />
 
       <div className="px-5">
-        <div className="rounded-2xl bg-white shadow-soft border border-white/80 p-3">
+        <div className="rounded-xl bg-white shadow-soft border border-slate-200/80 p-3">
           <div className="flex items-center justify-between mb-2 px-2">
             <button
               onClick={() => setMonth(addMonths(month, -1))}
@@ -69,7 +69,7 @@ export default function CalendarView() {
                 setMonth(new Date())
                 setSelected(new Date())
               }}
-              className="text-xs text-ink-500 px-2 py-1 rounded-full hover:bg-ink-900/5"
+              className="text-xs text-ink-500 px-2 py-1 rounded-xl hover:bg-ink-900/5"
             >
               오늘
             </button>
@@ -130,7 +130,7 @@ export default function CalendarView() {
       </div>
 
       <section className="px-5 mt-5">
-        <h2 className="font-bold text-ink-900 mb-3">
+        <h2 className="font-semibold text-ink-900 mb-3">
           {selected ? format(selected, 'M월 d일 EEEE', { locale: ko }) : '날짜 선택'}
         </h2>
         {dayMemos.length === 0 ? (

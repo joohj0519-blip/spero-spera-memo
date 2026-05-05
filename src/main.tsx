@@ -8,3 +8,11 @@ createRoot(document.getElementById('root')!).render(
     <App />
   </StrictMode>,
 )
+
+// PWA: 빌드된 환경에서만 서비스 워커 등록 (dev 에서는 HMR 과 충돌해서 제외)
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
+  window.addEventListener('load', () => {
+    const swUrl = `${import.meta.env.BASE_URL}sw.js`
+    void navigator.serviceWorker.register(swUrl).catch(() => {})
+  })
+}

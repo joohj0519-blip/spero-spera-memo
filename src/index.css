@@ -1,5 +1,36 @@
+/* Pretendard — 한국 웹의 표준급 모던 폰트, 동적 서브셋 (~70KB woff2) */
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css');
 
+/* Noto Sans KR — Pretendard 로딩 실패 시 폴백 (self-host) */
+@font-face {
+  font-family: 'Noto Sans KR';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('./fonts/noto-sans-kr-korean-400-normal.woff2') format('woff2'),
+       url('./fonts/NotoSansKR-Regular.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Noto Sans KR';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('./fonts/NotoSansKR-Medium.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Noto Sans KR';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('./fonts/NotoSansKR-SemiBold.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Noto Sans KR';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('./fonts/NotoSansKR-Bold.ttf') format('truetype');
+}
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -8,10 +39,31 @@
   html, body, #root {
     height: 100%;
   }
+  html {
+    /* 폰트 렌더링 옵션 — 외곽 부드럽게, 커닝/리거처만 적용 (한글 자간은 폰트 기본값 사용) */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    font-feature-settings: 'kern', 'liga';
+    -webkit-font-feature-settings: 'kern', 'liga';
+    font-kerning: normal;
+  }
   body {
     @apply font-sans text-ink-900 antialiased;
-    background: linear-gradient(180deg, #dbeafe 0%, #eff6ff 28%, #f8fafc 100%);
+    /* 무드 — 따뜻한 stone 톤, 도시적이고 차분한 베이지 그라데이션 */
+    background: linear-gradient(180deg, #fafaf9 0%, #f5f5f4 50%, #e7e5e4 100%);
     background-attachment: fixed;
+  }
+  @media (min-width: 1024px) {
+    body {
+      background: radial-gradient(1200px 800px at 30% 20%, #c7d2fe 0%, #d8e3f8 35%, #e2e8f0 100%);
+    }
+  }
+  /* PWA standalone (별도 창으로 설치되어 실행 중) — 데스크톱 "데스크" 톤 무시하고 안쪽 sky 그라데이션 사용 */
+  @media all and (display-mode: standalone) {
+    body {
+      background: linear-gradient(180deg, #dbeafe 0%, #eff6ff 28%, #f8fafc 100%) !important;
+    }
   }
   button {
     @apply select-none;
