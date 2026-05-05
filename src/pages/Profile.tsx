@@ -4,14 +4,79 @@ import type { Memo } from '../types'
 import { MEMO_TYPE_META } from '../types'
 import { TopBar } from '../components/TopBar'
 import { useInstallPrompt, useStandalone } from '../hooks/usePwa'
+import {
+  ensureInit,
+  getLastSync,
+  isSignedIn,
+  signIn,
+  signOut,
+  syncNow,
+  type SyncResult,
+} from '../lib/drive'
+import { format } from 'date-fns'
+import { ko } from 'date-fns/locale'
 
 export default function Profile() {
   const [memos, setMemos] = useState<Memo[]>([])
   const isStandalone = useStandalone()
   const { canInstall, installed, install } = useInstallPrompt()
+  const [drive, setDrive] = useState<{
+    ready: boolean
+    signedIn: boolean
+    syncing: boolean
+    error?: string
+    lastSync: number | null
+    lastResult?: SyncResult
+  }>({ ready: false, signedIn: false, syncing: false, lastSync: null })
+
   useEffect(() => {
     void listMemos().then(setMemos)
   }, [])
+
+  useEffect(() => {
+    void ensureInit()
+      .then(() => setDrive((s) => ({ ...s, ready: true, signedIn: isSignedIn(), lastSync: getLastSync() })))
+      .catch((e) => setDrive((s) => ({ ...s, error: String(e?.message ?? e) })))
+  }, [])
+
+  const reload = async () => {
+    setMemos(await listMemos())
+  }
+
+  const handleSignIn = async () => {
+    setDrive((s) => ({ ...s, error: undefined }))
+    try {
+      await signIn()
+      setDrive((s) => ({ ...s, signedIn: true }))
+    } catch (e: unknown) {
+      setDrive((s) => ({ ...s, error: e instanceof Error ? e.message : String(e) }))
+    }
+  }
+
+  const handleSync = async () => {
+    setDrive((s) => ({ ...s, syncing: true, error: undefined }))
+    try {
+      const result = await syncNow()
+      await reload()
+      setDrive((s) => ({
+        ...s,
+        syncing: false,
+        lastSync: getLastSync(),
+        lastResult: result,
+      }))
+    } catch (e: unknown) {
+      setDrive((s) => ({
+        ...s,
+        syncing: false,
+        error: e instanceof Error ? e.message : String(e),
+      }))
+    }
+  }
+
+  const handleSignOut = () => {
+    signOut()
+    setDrive((s) => ({ ...s, signedIn: false, lastResult: undefined }))
+  }
 
   const counts = {
     note: memos.filter((m) => m.type === 'note').length,
@@ -105,16 +170,77 @@ export default function Profile() {
 
       <section className="px-5 mt-4">
         <div className="rounded-xl bg-white shadow-soft border border-slate-200/80 p-5 space-y-3">
-          <h3 className="font-semibold text-ink-900">데이터</h3>
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold text-ink-900">Google Drive 동기화</h3>
+            {drive.signedIn && (
+              <span className="text-[11px] text-emerald-600 font-medium inline-flex items-center gap-1">
+                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
+                연결됨
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-ink-500 leading-relaxed">
+            본인 Drive 의 <b>앱 전용 폴더</b>에 메모가 저장돼요. 일반 Drive 에선 안 보이고
+            이 앱만 접근 가능합니다. 노트북·휴대폰 어디서든 같은 계정으로 로그인하면 같은 메모를 봐요.
+          </p>
+
+          {!drive.ready ? (
+            <p className="text-xs text-ink-400">Google API 로딩 중…</p>
+          ) : !drive.signedIn ? (
+            <button
+              onClick={() => void handleSignIn()}
+              className="w-full px-4 py-3 rounded-xl bg-ink-900 text-white font-medium"
+            >
+              Google 계정으로 연결
+            </button>
+          ) : (
+            <div className="space-y-2">
+              <button
+                onClick={() => void handleSync()}
+                disabled={drive.syncing}
+                className="w-full px-4 py-3 rounded-xl bg-ink-900 text-white font-medium disabled:opacity-60"
+              >
+                {drive.syncing ? '동기화 중…' : '지금 동기화'}
+              </button>
+              <div className="flex items-center justify-between text-[11px] text-ink-500">
+                <span>
+                  {drive.lastSync
+                    ? `마지막 동기화: ${format(new Date(drive.lastSync), 'M월 d일 HH:mm', { locale: ko })}`
+                    : '아직 동기화 안 됨'}
+                </span>
+                <button
+                  onClick={handleSignOut}
+                  className="text-ink-500 hover:text-rose-600"
+                >
+                  연결 해제
+                </button>
+              </div>
+              {drive.lastResult && (
+                <p className="text-[11px] text-ink-500">
+                  결과: 추가 {drive.lastResult.added} · 수정 {drive.lastResult.updated} ·
+                  삭제 {drive.lastResult.removed} · 총 {drive.lastResult.total}
+                </p>
+              )}
+            </div>
+          )}
+
+          {drive.error && (
+            <p className="text-xs text-rose-600 mt-2">⚠ {drive.error}</p>
+          )}
+        </div>
+      </section>
+
+      <section className="px-5 mt-4">
+        <div className="rounded-xl bg-white shadow-soft border border-slate-200/80 p-5 space-y-3">
+          <h3 className="font-semibold text-ink-900">로컬 백업</h3>
           <button
             onClick={exportJson}
-            className="w-full px-4 py-3 rounded-xl bg-ink-900 text-white font-medium"
+            className="w-full px-4 py-3 rounded-xl bg-white text-ink-900 font-medium border border-slate-200/80"
           >
             JSON 으로 내보내기
           </button>
           <p className="text-xs text-ink-500 leading-relaxed">
-            현재는 이 기기 브라우저(IndexedDB) 에만 저장됩니다.<br />
-            추후 Google Drive 동기화가 추가되면 여러 기기에서 같은 메모를 볼 수 있어요.
+            모든 메모를 한 파일로 다운로드해서 따로 보관할 수 있어요.
           </p>
         </div>
       </section>

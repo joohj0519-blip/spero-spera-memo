@@ -31,6 +31,13 @@ export async function saveMemo(memo: Memo): Promise<void> {
 
 export async function deleteMemo(id: string): Promise<void> {
   await del(memoKey(id))
+  // 동기화용 묘비석 기록 (Drive 와 머지할 때 삭제됐음을 알림)
+  try {
+    const { markDeleted } = await import('./lib/drive')
+    markDeleted(id)
+  } catch {
+    /* drive lib 미사용 시 무시 */
+  }
 }
 
 export function fileToDataUrl(file: File): Promise<string> {
