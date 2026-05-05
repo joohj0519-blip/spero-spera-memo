@@ -2,7 +2,7 @@ import type { Memo } from '../types'
 import { deleteMemo, listMemos, saveMemo } from '../db'
 
 const CLIENT_ID =
-  '852366236574-nf6qen06k2jki5dklpbpggcgslv77u1n.apps.googleusercontent.com'
+  '852366236574-nv11al8k63tl6t9vpm0ka59hc6ch3k8d.apps.googleusercontent.com'
 const SCOPES = 'https://www.googleapis.com/auth/drive.appdata'
 const FILE_NAME = 'spero-spera.json'
 
