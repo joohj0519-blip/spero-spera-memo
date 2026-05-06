@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import { FloatingFrame } from './components/FloatingFrame'
 import Home from './pages/Home'
@@ -6,10 +7,15 @@ import Detail from './pages/Detail'
 import All from './pages/All'
 import CalendarView from './pages/Calendar'
 import Profile from './pages/Profile'
+import { setupSyncTriggers } from './lib/sync'
 
 const basename = import.meta.env.BASE_URL.replace(/\/$/, '') || '/'
 
 export default function App() {
+  useEffect(() => {
+    setupSyncTriggers()
+  }, [])
+
   return (
     <BrowserRouter basename={basename}>
       <FloatingFrame>

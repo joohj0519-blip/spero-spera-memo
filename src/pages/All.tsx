@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { listMemos } from '../db'
+import { onMemosChanged } from '../lib/sync'
 import type { Memo, MemoType } from '../types'
 import { MEMO_TYPE_META } from '../types'
 import { TopBar } from '../components/TopBar'
@@ -20,7 +21,9 @@ export default function All() {
   const [q, setQ] = useState('')
 
   useEffect(() => {
-    void listMemos().then(setMemos)
+    const reload = () => { void listMemos().then(setMemos) }
+    reload()
+    return onMemosChanged(reload)
   }, [])
 
   const filtered = useMemo(() => {

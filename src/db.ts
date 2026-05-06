@@ -9,6 +9,13 @@ export const newId = () =>
     ? crypto.randomUUID()
     : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
 
+function triggerPush() {
+  // 순환 import 방지를 위해 동적 로드
+  import('./lib/sync')
+    .then(({ requestPush }) => requestPush())
+    .catch(() => { /* sync 모듈 미사용 환경에서는 무시 */ })
+}
+
 export async function listMemos(): Promise<Memo[]> {
   const allKeys = await keys()
   const memoKeys = allKeys.filter((k): k is string => typeof k === 'string' && k.startsWith(PREFIX))
@@ -27,17 +34,19 @@ export async function getMemo(id: string): Promise<Memo | undefined> {
 
 export async function saveMemo(memo: Memo): Promise<void> {
   await set(memoKey(memo.id), memo)
+  triggerPush()
 }
 
 export async function deleteMemo(id: string): Promise<void> {
   await del(memoKey(id))
-  // 동기화용 묘비석 기록 (Drive 와 머지할 때 삭제됐음을 알림)
+  // 동기화용 묘비석 (Drive 와 머지할 때 삭제됐음을 알림)
   try {
     const { markDeleted } = await import('./lib/drive')
     markDeleted(id)
   } catch {
     /* drive lib 미사용 시 무시 */
   }
+  triggerPush()
 }
 
 export function fileToDataUrl(file: File): Promise<string> {

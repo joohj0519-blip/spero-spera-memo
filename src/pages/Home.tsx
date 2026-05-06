@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import { listMemos } from '../db'
+import { onMemosChanged } from '../lib/sync'
 import type { Memo, MemoType } from '../types'
 
 const dateLine = format(new Date(), 'yyyy.MM.dd · eee', { locale: ko })
@@ -32,7 +33,9 @@ export default function Home() {
   const [memos, setMemos] = useState<Memo[]>([])
 
   useEffect(() => {
-    void listMemos().then(setMemos)
+    const reload = () => { void listMemos().then(setMemos) }
+    reload()
+    return onMemosChanged(reload)
   }, [])
 
   const todoOpen = memos.filter((m) => m.type === 'todo' && !m.done).length

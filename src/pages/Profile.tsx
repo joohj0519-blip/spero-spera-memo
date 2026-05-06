@@ -6,13 +6,17 @@ import { TopBar } from '../components/TopBar'
 import { useInstallPrompt, useStandalone } from '../hooks/usePwa'
 import {
   ensureInit,
+  fetchUserInfo,
+  getLastError,
   getLastSync,
+  getRemoteFileId,
+  getStoredUser,
   isSignedIn,
   signIn,
   signOut,
-  syncNow,
-  type SyncResult,
+  type UserInfo,
 } from '../lib/drive'
+import { onMemosChanged, onSyncState, syncImmediately } from '../lib/sync'
 import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
 
@@ -23,59 +27,61 @@ export default function Profile() {
   const [drive, setDrive] = useState<{
     ready: boolean
     signedIn: boolean
-    syncing: boolean
-    error?: string
-    lastSync: number | null
-    lastResult?: SyncResult
-  }>({ ready: false, signedIn: false, syncing: false, lastSync: null })
+    user: UserInfo | null
+    initError?: string
+    signInError?: string
+  }>({ ready: false, signedIn: false, user: getStoredUser() })
+
+  const [sync, setSync] = useState(() => ({
+    status: 'idle' as 'idle' | 'syncing' | 'error' | 'offline',
+    lastError: getLastError()?.msg,
+    lastAt: getLastSync() ?? undefined,
+  }))
 
   useEffect(() => {
-    void listMemos().then(setMemos)
+    const reload = () => { void listMemos().then(setMemos) }
+    reload()
+    return onMemosChanged(reload)
   }, [])
 
   useEffect(() => {
     void ensureInit()
-      .then(() => setDrive((s) => ({ ...s, ready: true, signedIn: isSignedIn(), lastSync: getLastSync() })))
-      .catch((e) => setDrive((s) => ({ ...s, error: String(e?.message ?? e) })))
+      .then(async () => {
+        const signed = isSignedIn()
+        let user = getStoredUser()
+        if (signed && !user) user = await fetchUserInfo()
+        setDrive((s) => ({ ...s, ready: true, signedIn: signed, user }))
+      })
+      .catch((e) => setDrive((s) => ({ ...s, initError: String(e?.message ?? e) })))
   }, [])
 
-  const reload = async () => {
-    setMemos(await listMemos())
-  }
+  useEffect(() => {
+    return onSyncState((s) => {
+      setSync({ status: s.status, lastError: s.lastError, lastAt: s.lastAt ?? getLastSync() ?? undefined })
+      // 동기화 후 로그인 상태가 바뀌었을 수 있음
+      setDrive((d) => ({ ...d, signedIn: isSignedIn() }))
+    })
+  }, [])
 
   const handleSignIn = async () => {
-    setDrive((s) => ({ ...s, error: undefined }))
+    setDrive((s) => ({ ...s, signInError: undefined }))
     try {
       await signIn()
-      setDrive((s) => ({ ...s, signedIn: true }))
+      const user = await fetchUserInfo()
+      setDrive((s) => ({ ...s, signedIn: true, user }))
+      await syncImmediately('after-signin')
     } catch (e: unknown) {
-      setDrive((s) => ({ ...s, error: e instanceof Error ? e.message : String(e) }))
+      setDrive((s) => ({ ...s, signInError: e instanceof Error ? e.message : String(e) }))
     }
   }
 
   const handleSync = async () => {
-    setDrive((s) => ({ ...s, syncing: true, error: undefined }))
-    try {
-      const result = await syncNow()
-      await reload()
-      setDrive((s) => ({
-        ...s,
-        syncing: false,
-        lastSync: getLastSync(),
-        lastResult: result,
-      }))
-    } catch (e: unknown) {
-      setDrive((s) => ({
-        ...s,
-        syncing: false,
-        error: e instanceof Error ? e.message : String(e),
-      }))
-    }
+    await syncImmediately('manual')
   }
 
   const handleSignOut = () => {
     signOut()
-    setDrive((s) => ({ ...s, signedIn: false, lastResult: undefined }))
+    setDrive((s) => ({ ...s, signedIn: false, user: null }))
   }
 
   const counts = {
@@ -100,11 +106,13 @@ export default function Profile() {
     URL.revokeObjectURL(url)
   }
 
+  const remoteFileId = getRemoteFileId()
+  const origin = typeof window !== 'undefined' ? window.location.origin : ''
+
   return (
     <div className="pb-32">
       <TopBar title="spero spera" subtitle="dum spiro, spero · 숨쉬는 한, 희망한다" />
 
-      {/* 앱 설치 안내: PC에서 별도 창으로 띄워 다른 작업과 같이 쓰기 */}
       {!isStandalone && (
         <section className="px-5">
           <div className="rounded-xl bg-gradient-to-br from-blue-50 to-sky-100 border border-slate-200/80 shadow-soft p-5">
@@ -172,16 +180,18 @@ export default function Profile() {
         <div className="rounded-xl bg-white shadow-soft border border-slate-200/80 p-5 space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="font-semibold text-ink-900">Google Drive 동기화</h3>
-            {drive.signedIn && (
+            {drive.signedIn ? (
               <span className="text-[11px] text-emerald-600 font-medium inline-flex items-center gap-1">
                 <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
-                연결됨
+                {sync.status === 'syncing' ? '동기화 중…' : '연결됨 · 자동 동기화'}
               </span>
+            ) : (
+              <span className="text-[11px] text-ink-400">미연결</span>
             )}
           </div>
           <p className="text-xs text-ink-500 leading-relaxed">
-            본인 Drive 의 <b>앱 전용 폴더</b>에 메모가 저장돼요. 일반 Drive 에선 안 보이고
-            이 앱만 접근 가능합니다. 노트북·휴대폰 어디서든 같은 계정으로 로그인하면 같은 메모를 봐요.
+            본인 Drive 의 <b>앱 전용 폴더</b>에 메모가 저장돼요. 노트북·휴대폰 어디서든 <b>같은 계정</b>으로 로그인하면
+            메모 저장·앱 시작·5분 간격 등 자동으로 동기화됩니다.
           </p>
 
           {!drive.ready ? (
@@ -195,17 +205,28 @@ export default function Profile() {
             </button>
           ) : (
             <div className="space-y-2">
+              {drive.user?.email && (
+                <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-ink-900/[0.03] text-xs">
+                  {drive.user.picture && (
+                    <img src={drive.user.picture} alt="" className="w-6 h-6 rounded-full" />
+                  )}
+                  <span className="flex-1 truncate">
+                    <b className="text-ink-900">{drive.user.email}</b>
+                    {drive.user.name && <span className="text-ink-500"> · {drive.user.name}</span>}
+                  </span>
+                </div>
+              )}
               <button
                 onClick={() => void handleSync()}
-                disabled={drive.syncing}
+                disabled={sync.status === 'syncing'}
                 className="w-full px-4 py-3 rounded-xl bg-ink-900 text-white font-medium disabled:opacity-60"
               >
-                {drive.syncing ? '동기화 중…' : '지금 동기화'}
+                {sync.status === 'syncing' ? '동기화 중…' : '지금 강제 동기화'}
               </button>
               <div className="flex items-center justify-between text-[11px] text-ink-500">
                 <span>
-                  {drive.lastSync
-                    ? `마지막 동기화: ${format(new Date(drive.lastSync), 'M월 d일 HH:mm', { locale: ko })}`
+                  {sync.lastAt
+                    ? `마지막 동기화: ${format(new Date(sync.lastAt), 'M월 d일 HH:mm:ss', { locale: ko })}`
                     : '아직 동기화 안 됨'}
                 </span>
                 <button
@@ -215,18 +236,42 @@ export default function Profile() {
                   연결 해제
                 </button>
               </div>
-              {drive.lastResult && (
-                <p className="text-[11px] text-ink-500">
-                  결과: 추가 {drive.lastResult.added} · 수정 {drive.lastResult.updated} ·
-                  삭제 {drive.lastResult.removed} · 총 {drive.lastResult.total}
-                </p>
-              )}
             </div>
           )}
 
-          {drive.error && (
-            <p className="text-xs text-rose-600 mt-2">⚠ {drive.error}</p>
+          {sync.lastError && (
+            <div className="text-xs text-rose-600 bg-rose-50 border border-rose-100 rounded-lg p-2">
+              <p className="font-medium">⚠ 마지막 동기화 오류</p>
+              <p className="mt-1 break-words">{sync.lastError}</p>
+            </div>
           )}
+          {drive.signInError && (
+            <p className="text-xs text-rose-600">⚠ 로그인 오류: {drive.signInError}</p>
+          )}
+          {drive.initError && (
+            <p className="text-xs text-rose-600">⚠ 초기화 오류: {drive.initError}</p>
+          )}
+
+          {/* 진단 — 두 기기에서 비교해보면 동기화 안 되는 원인 파악 가능 */}
+          <details className="text-[11px] text-ink-500 mt-2">
+            <summary className="cursor-pointer">동기화 진단 정보</summary>
+            <dl className="mt-2 grid grid-cols-[80px_1fr] gap-y-1">
+              <dt className="text-ink-400">앱 주소</dt>
+              <dd className="text-ink-700 break-all">{origin}</dd>
+              <dt className="text-ink-400">계정</dt>
+              <dd className="text-ink-700 break-all">{drive.user?.email ?? '(미로그인)'}</dd>
+              <dt className="text-ink-400">Drive 파일 ID</dt>
+              <dd className="text-ink-700 break-all">{remoteFileId ?? '(아직 없음)'}</dd>
+              <dt className="text-ink-400">로컬 메모</dt>
+              <dd className="text-ink-700">{memos.length}개</dd>
+              <dt className="text-ink-400">상태</dt>
+              <dd className="text-ink-700">{sync.status}</dd>
+            </dl>
+            <p className="mt-2 text-ink-400 leading-relaxed">
+              ※ <b>두 기기에서 같은 계정 / 같은 앱 주소</b>가 아니면 동기화 안 됩니다.
+              위 값을 노트북·모바일에서 비교해보세요.
+            </p>
+          </details>
         </div>
       </section>
 
