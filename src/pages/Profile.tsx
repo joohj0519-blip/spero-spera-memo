@@ -17,6 +17,7 @@ import {
   type UserInfo,
 } from '../lib/drive'
 import { onMemosChanged, onSyncState, syncImmediately } from '../lib/sync'
+import { notificationPermission, requestNotificationPermission } from '../lib/reminders'
 import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
 
@@ -37,6 +38,10 @@ export default function Profile() {
     lastError: getLastError()?.msg,
     lastAt: getLastSync() ?? undefined,
   }))
+
+  const [notifPerm, setNotifPerm] = useState<NotificationPermission | 'unsupported'>(
+    () => notificationPermission(),
+  )
 
   useEffect(() => {
     const reload = () => { void listMemos().then(setMemos) }
@@ -82,6 +87,11 @@ export default function Profile() {
   const handleSignOut = () => {
     signOut()
     setDrive((s) => ({ ...s, signedIn: false, user: null }))
+  }
+
+  const handleEnableNotifications = async () => {
+    const result = await requestNotificationPermission()
+    setNotifPerm(result)
   }
 
   const counts = {
@@ -272,6 +282,39 @@ export default function Profile() {
               위 값을 노트북·모바일에서 비교해보세요.
             </p>
           </details>
+        </div>
+      </section>
+
+      <section className="px-5 mt-4">
+        <div className="rounded-xl bg-white shadow-soft border border-slate-200/80 p-5 space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold text-ink-900">날짜 알림</h3>
+            <span className="text-[11px] text-ink-400">
+              {notifPerm === 'granted' ? '✓ 켜짐' :
+                notifPerm === 'denied' ? '차단됨' :
+                  notifPerm === 'unsupported' ? '지원 안 됨' : '꺼짐'}
+            </span>
+          </div>
+          <p className="text-xs text-ink-500 leading-relaxed">
+            할 일·체크리스트에 날짜를 설정하면 그 날짜에 앱 상단 배너로 알려줘요.
+            아래 권한을 허용하면 앱이 닫혀 있어도 시스템 알림으로 표시됩니다.
+          </p>
+          {notifPerm === 'default' && (
+            <button
+              onClick={() => void handleEnableNotifications()}
+              className="w-full px-4 py-3 rounded-xl bg-ink-900 text-white font-medium"
+            >
+              시스템 알림 허용
+            </button>
+          )}
+          {notifPerm === 'denied' && (
+            <p className="text-xs text-rose-600 bg-rose-50 border border-rose-100 rounded-lg p-2">
+              브라우저에서 알림이 차단되어 있어요. 주소창의 자물쇠 아이콘 → 알림 권한을 허용으로 바꾸면 다시 사용할 수 있습니다.
+            </p>
+          )}
+          {notifPerm === 'unsupported' && (
+            <p className="text-xs text-ink-500">이 브라우저는 시스템 알림을 지원하지 않아요. 앱 안에서는 그래도 배너로 보여드려요.</p>
+          )}
         </div>
       </section>
 

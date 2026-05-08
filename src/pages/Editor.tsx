@@ -5,6 +5,7 @@ import type { Attachment, ChecklistItem, Memo, MemoType } from '../types'
 import { MEMO_TYPE_META } from '../types'
 import { TopBar } from '../components/TopBar'
 import { PaperclipIcon, PlusIcon, TrashIcon } from '../components/Icons'
+import { notificationPermission, requestNotificationPermission } from '../lib/reminders'
 
 const empty = (type: MemoType): Memo => ({
   id: newId(),
@@ -159,7 +160,13 @@ export default function Editor() {
       <div className="px-5 mt-3 flex flex-wrap items-center gap-2">
         <DateField
           value={memo.dueDate}
-          onChange={(v) => update('dueDate', v)}
+          onChange={(v) => {
+            update('dueDate', v)
+            if (v && (memo.type === 'todo' || memo.type === 'checklist')
+              && notificationPermission() === 'default') {
+              void requestNotificationPermission()
+            }
+          }}
         />
         <button
           onClick={() => update('pinned', !memo.pinned)}

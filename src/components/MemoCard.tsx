@@ -48,7 +48,9 @@ const palette: Record<MemoType, {
   },
 }
 
-export function MemoCard({ memo }: { memo: Memo }) {
+export type MemoCardVariant = 'card' | 'line'
+
+export function MemoCard({ memo, variant = 'card' }: { memo: Memo; variant?: MemoCardVariant }) {
   const meta = MEMO_TYPE_META[memo.type]
   const c = palette[memo.type]
   const due = dueLabel(memo.dueDate)
@@ -59,6 +61,53 @@ export function MemoCard({ memo }: { memo: Memo }) {
     : 0
   const checklistTotal = memo.type === 'checklist' ? memo.items.length : 0
   const checklistPct = checklistTotal > 0 ? (checklistDone / checklistTotal) * 100 : 0
+
+  if (variant === 'line') {
+    return (
+      <Link
+        to={`/memo/${memo.id}`}
+        className={[
+          'group flex items-center gap-2.5 rounded-lg border border-slate-200/80 shadow-soft hover:shadow-card transition-shadow pl-1.5 pr-3 py-2 overflow-hidden',
+          c.card,
+        ].join(' ')}
+      >
+        <span className={['w-1 h-7 rounded-full shrink-0', c.bar].join(' ')} aria-hidden />
+        <div
+          className={[
+            'shrink-0 grid place-items-center w-7 h-7 rounded-md text-sm ring-1',
+            c.iconBg,
+            c.iconRing,
+          ].join(' ')}
+        >
+          <span aria-hidden>{c.emoji}</span>
+        </div>
+        <div className="flex-1 min-w-0 inline-flex items-center gap-1.5">
+          {memo.pinned && <span className="text-amber-500 text-[10px] shrink-0">📌</span>}
+          <span className="text-sm font-medium text-ink-900 truncate">
+            {memo.title || '제목 없음'}
+          </span>
+          {memo.type === 'todo' && memo.done && (
+            <span className="shrink-0 text-[10px] text-emerald-700 font-medium">✓</span>
+          )}
+          {memo.type === 'checklist' && checklistTotal > 0 && (
+            <span className="shrink-0 text-[10px] text-ink-400 tabular-nums">
+              {checklistDone}/{checklistTotal}
+            </span>
+          )}
+        </div>
+        {due && (
+          <span
+            className={[
+              'shrink-0 text-[11px] tabular-nums',
+              overdue && !memo.done ? 'text-rose-600 font-medium' : 'text-ink-500',
+            ].join(' ')}
+          >
+            {due}
+          </span>
+        )}
+      </Link>
+    )
+  }
 
   return (
     <Link

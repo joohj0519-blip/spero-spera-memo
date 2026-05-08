@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ReactNode, PointerEvent as RPointerEvent } from 'react'
 import { BottomNav } from './BottomNav'
+import { ReminderBanner } from './ReminderBanner'
 import { useStandalone } from '../hooks/usePwa'
 
-const FRAME_W = 420
-const TOP_OFFSET = 28
+const FRAME_W = 500
+const FRAME_H = 930
+const TOP_OFFSET = 16
 
 export function FloatingFrame({ children }: { children: ReactNode }) {
   const isStandalone = useStandalone()
@@ -37,7 +39,7 @@ export function FloatingFrame({ children }: { children: ReactNode }) {
     if (!drag.current) return
     const dx = e.clientX - drag.current.startX
     const dy = e.clientY - drag.current.startY
-    const frameH = Math.min(window.innerHeight - 16, 880)
+    const frameH = Math.min(window.innerHeight - 16, FRAME_H)
     setPos({
       x: clamp(drag.current.px + dx, 0, window.innerWidth - FRAME_W),
       y: clamp(drag.current.py + dy, 0, window.innerHeight - frameH),
@@ -51,7 +53,8 @@ export function FloatingFrame({ children }: { children: ReactNode }) {
   //    → 둘 다 윈도우 전체를 메모 화면으로 사용
   if (!isDesktop || isStandalone) {
     return (
-      <div className="min-h-screen flex flex-col max-w-[480px] mx-auto w-full">
+      <div className="min-h-screen flex flex-col max-w-[500px] mx-auto w-full">
+        <ReminderBanner />
         <div className="flex-1 flex flex-col">{children}</div>
         <BottomNav />
       </div>
@@ -64,7 +67,7 @@ export function FloatingFrame({ children }: { children: ReactNode }) {
       style={{
         transform: `translate(${pos.x}px, ${pos.y}px)`,
         width: FRAME_W,
-        height: 'min(880px, calc(100vh - 56px))',
+        height: `min(${FRAME_H}px, calc(100vh - 32px))`,
         background:
           'linear-gradient(180deg, #fafaf9 0%, #f5f5f4 60%, #e7e5e4 100%)',
       }}
@@ -79,6 +82,7 @@ export function FloatingFrame({ children }: { children: ReactNode }) {
       >
         <div className="w-10 h-1 rounded-full bg-ink-400/30" />
       </div>
+      <ReminderBanner />
       <div className="flex-1 overflow-y-auto overscroll-contain flex flex-col">
         {children}
       </div>

@@ -111,13 +111,13 @@ export default function All() {
         })}
       </div>
 
-      <div className="px-5 mt-4 space-y-2.5">
+      <div className="px-5 mt-4 space-y-1.5">
         {filtered.length === 0 ? (
           <p className="text-center text-ink-500 py-12">
             {q ? '검색 결과가 없어요.' : '메모가 없어요.'}
           </p>
         ) : (
-          filtered.map((m) => <MemoCard key={m.id} memo={m} />)
+          filtered.map((m) => <MemoCard key={m.id} memo={m} variant="line" />)
         )}
       </div>
     </div>
