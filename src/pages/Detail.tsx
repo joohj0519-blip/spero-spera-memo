@@ -70,7 +70,7 @@ export default function Detail() {
               onClick={togglePin}
               className={[
                 'p-2 rounded-xl hover:bg-white/60',
-                memo.pinned ? 'text-amber-500' : 'text-ink-400',
+                memo.pinned ? 'text-gold-500' : 'text-ink-400',
               ].join(' ')}
               aria-label="고정"
             >
@@ -114,7 +114,7 @@ export default function Detail() {
       {/* Body */}
       {memo.body && (
         <section className="px-5 mt-5">
-          <div className="rounded-xl bg-white shadow-soft border border-slate-200/80 p-5">
+          <div className="rounded-xl bg-white shadow-soft border border-ink-200/80 p-5">
             <p className="text-[15px] leading-relaxed whitespace-pre-line text-ink-900">
               {memo.body}
             </p>
@@ -125,7 +125,7 @@ export default function Detail() {
       {/* Items */}
       {memo.items.length > 0 && (
         <section className="px-5 mt-4">
-          <div className="rounded-xl bg-white shadow-soft border border-slate-200/80 p-3">
+          <div className="rounded-xl bg-white shadow-soft border border-ink-200/80 p-3">
             <div className="text-xs font-semibold text-ink-500 mb-2 px-2">
               {memo.type === 'checklist' ? '체크리스트' : '세부 할 일'}
             </div>
@@ -161,7 +161,7 @@ export default function Detail() {
       {/* Attachments */}
       {memo.attachments.length > 0 && (
         <section className="px-5 mt-4">
-          <div className="rounded-xl bg-white shadow-soft border border-slate-200/80 p-3">
+          <div className="rounded-xl bg-white shadow-soft border border-ink-200/80 p-3">
             <div className="text-xs font-semibold text-ink-500 mb-2 px-2 inline-flex items-center gap-1">
               <PaperclipIcon width={12} height={12} />
               첨부파일 {memo.attachments.length}

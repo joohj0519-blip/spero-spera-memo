@@ -50,19 +50,20 @@
   }
   body {
     @apply font-sans text-ink-900 antialiased;
-    /* 무드 — 따뜻한 stone 톤, 도시적이고 차분한 베이지 그라데이션 */
-    background: linear-gradient(180deg, #fafaf9 0%, #f5f5f4 50%, #e7e5e4 100%);
+    /* 무드 — 빈티지 어시(earthy) 톤, 따뜻한 실크 아이보리 그라데이션 */
+    background: linear-gradient(180deg, #F4F1EA 0%, #EFEADF 50%, #E3DBCE 100%);
     background-attachment: fixed;
   }
   @media (min-width: 1024px) {
     body {
-      background: radial-gradient(1200px 800px at 30% 20%, #c7d2fe 0%, #d8e3f8 35%, #e2e8f0 100%);
+      /* 데스크톱 "데스크" — 차분한 엠버/올리브 무드 */
+      background: radial-gradient(1200px 800px at 30% 20%, #E7DCCB 0%, #DDD0BC 38%, #CDBEA6 100%);
     }
   }
-  /* PWA standalone (별도 창으로 설치되어 실행 중) — 데스크톱 "데스크" 톤 무시하고 안쪽 sky 그라데이션 사용 */
+  /* PWA standalone (별도 창으로 설치되어 실행 중) — 안쪽 아이보리 그라데이션 */
   @media all and (display-mode: standalone) {
     body {
-      background: linear-gradient(180deg, #dbeafe 0%, #eff6ff 28%, #f8fafc 100%) !important;
+      background: linear-gradient(180deg, #F4EFE6 0%, #F8F4EC 28%, #FBF9F3 100%) !important;
     }
   }
   button {

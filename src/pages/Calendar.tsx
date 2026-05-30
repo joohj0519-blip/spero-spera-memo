@@ -59,7 +59,7 @@ export default function CalendarView() {
       <TopBar title={format(month, 'yyyy년 M월', { locale: ko })} subtitle="캘린더" />
 
       <div className="px-5">
-        <div className="rounded-xl bg-white shadow-soft border border-slate-200/80 p-3">
+        <div className="rounded-xl bg-white shadow-soft border border-ink-200/80 p-3">
           <div className="flex items-center justify-between mb-2 px-2">
             <button
               onClick={() => setMonth(addMonths(month, -1))}

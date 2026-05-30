@@ -135,7 +135,7 @@ export default function Editor() {
                       : type === 'checklist'
                         ? 'bg-check-500 text-white border-check-500'
                         : 'bg-todo-500 text-white border-todo-500'
-                    : 'bg-white text-ink-700 border-slate-200/80 shadow-soft',
+                    : 'bg-white text-ink-700 border-ink-200/80 shadow-soft',
                 ].join(' ')}
               >
                 <span aria-hidden className="text-base leading-none">{m.emoji}</span>
@@ -173,8 +173,8 @@ export default function Editor() {
           className={[
             'ml-auto px-3 py-1.5 rounded-xl text-xs font-medium border transition-colors',
             memo.pinned
-              ? 'bg-amber-100 text-amber-700 border-amber-200'
-              : 'bg-white text-ink-500 border-slate-200/80 shadow-soft',
+              ? 'bg-gold-100 text-gold-700 border-gold-200'
+              : 'bg-white text-ink-500 border-ink-200/80 shadow-soft',
           ].join(' ')}
         >
           📌 {memo.pinned ? '고정됨' : '고정하기'}
@@ -188,7 +188,7 @@ export default function Editor() {
               addItem()
             }
           }}
-          className="px-3 py-1.5 rounded-xl text-xs font-medium border bg-white text-ink-700 border-slate-200/80 shadow-soft hover:bg-ink-900/[0.03] transition-colors"
+          className="px-3 py-1.5 rounded-xl text-xs font-medium border bg-white text-ink-700 border-ink-200/80 shadow-soft hover:bg-ink-900/[0.03] transition-colors"
         >
           ＋ 메모 추가
         </button>
@@ -201,14 +201,14 @@ export default function Editor() {
           onChange={(e) => update('body', e.target.value)}
           placeholder={memo.type === 'note' ? '내용을 자유롭게 적어보세요…' : '메모 (선택)'}
           rows={memo.type === 'note' ? 10 : 4}
-          className="w-full bg-white/70 rounded-xl p-4 shadow-soft border border-slate-200/80 text-[15px] leading-relaxed resize-none placeholder:text-ink-400"
+          className="w-full bg-white/70 rounded-xl p-4 shadow-soft border border-ink-200/80 text-[15px] leading-relaxed resize-none placeholder:text-ink-400"
         />
       </div>
 
       {/* Checklist / Todo items */}
       {(memo.type === 'checklist' || memo.type === 'todo') && (
         <div className="px-5 mt-4">
-          <div className="rounded-xl bg-white shadow-soft border border-slate-200/80 p-3">
+          <div className="rounded-xl bg-white shadow-soft border border-ink-200/80 p-3">
             <div className="text-xs font-semibold text-ink-500 mb-2 px-2">
               {memo.type === 'checklist' ? '체크리스트' : '세부 할 일'}
             </div>
@@ -260,7 +260,7 @@ export default function Editor() {
 
       {/* Attachments */}
       <div className="px-5 mt-4">
-        <div className="rounded-xl bg-white shadow-soft border border-slate-200/80 p-3">
+        <div className="rounded-xl bg-white shadow-soft border border-ink-200/80 p-3">
           <div className="flex items-center justify-between mb-2 px-2">
             <span className="text-xs font-semibold text-ink-500">첨부파일</span>
             <button
@@ -320,7 +320,7 @@ export default function Editor() {
 
 function DateField({ value, onChange }: { value?: string; onChange: (v: string | undefined) => void }) {
   return (
-    <label className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white shadow-soft border border-slate-200/80 text-sm text-ink-700 cursor-pointer">
+    <label className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white shadow-soft border border-ink-200/80 text-sm text-ink-700 cursor-pointer">
       <span>📅</span>
       <input
         type="date"

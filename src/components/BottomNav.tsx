@@ -14,7 +14,7 @@ const tabs: Tab[] = [
 export function BottomNav() {
   return (
     <nav className="shrink-0 px-3 safe-bottom pt-1">
-      <div className="flex items-center justify-around rounded-xl bg-white/95 backdrop-blur shadow-card border border-slate-200/70 px-2 py-2">
+      <div className="flex items-center justify-around rounded-xl bg-white/95 backdrop-blur shadow-card border border-ink-200/70 px-2 py-2">
         {tabs.map(({ to, label, Icon, end }) => (
           <NavLink
             key={to}

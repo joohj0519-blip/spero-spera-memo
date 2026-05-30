@@ -125,8 +125,8 @@ export default function Profile() {
 
       {!isStandalone && (
         <section className="px-5">
-          <div className="rounded-xl bg-gradient-to-br from-blue-50 to-sky-100 border border-slate-200/80 shadow-soft p-5">
-            <p className="text-xs font-semibold text-blue-700 mb-1">PC 데스크톱 앱처럼 사용하기</p>
+          <div className="rounded-xl bg-gradient-to-br from-todo-50 to-todo-100 border border-ink-200/80 shadow-soft p-5">
+            <p className="text-xs font-semibold text-todo-700 mb-1">PC 데스크톱 앱처럼 사용하기</p>
             <h3 className="text-base font-semibold text-ink-900">앱으로 설치</h3>
             <p className="mt-1 text-sm text-ink-700 leading-relaxed">
               브라우저 창이 아닌 <b>별도의 작은 창</b>으로 떠서 다른 작업과 함께 쓸 수 있어요.
@@ -160,7 +160,7 @@ export default function Profile() {
 
 
       <section className="px-5">
-        <div className="rounded-xl bg-white shadow-soft border border-slate-200/80 p-5">
+        <div className="rounded-xl bg-white shadow-soft border border-ink-200/80 p-5">
           <p className="text-sm text-ink-500">총 메모</p>
           <p className="text-3xl font-semibold text-ink-900">{memos.length}</p>
           <div className="mt-4 grid grid-cols-3 gap-3 text-center">
@@ -175,7 +175,7 @@ export default function Profile() {
       </section>
 
       <section className="px-5 mt-4">
-        <div className="rounded-xl bg-white shadow-soft border border-slate-200/80 p-5">
+        <div className="rounded-xl bg-white shadow-soft border border-ink-200/80 p-5">
           <p className="text-sm text-ink-500">첨부파일</p>
           <p className="text-2xl font-semibold text-ink-900">
             {totalAttachments}<span className="text-base text-ink-500 font-medium ml-1">개</span>
@@ -187,12 +187,12 @@ export default function Profile() {
       </section>
 
       <section className="px-5 mt-4">
-        <div className="rounded-xl bg-white shadow-soft border border-slate-200/80 p-5 space-y-3">
+        <div className="rounded-xl bg-white shadow-soft border border-ink-200/80 p-5 space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="font-semibold text-ink-900">Google Drive 동기화</h3>
             {drive.signedIn ? (
-              <span className="text-[11px] text-emerald-600 font-medium inline-flex items-center gap-1">
-                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
+              <span className="text-[11px] text-note-600 font-medium inline-flex items-center gap-1">
+                <span className="w-1.5 h-1.5 bg-note-500 rounded-full" />
                 {sync.status === 'syncing' ? '동기화 중…' : '연결됨 · 자동 동기화'}
               </span>
             ) : (
@@ -241,7 +241,7 @@ export default function Profile() {
                 </span>
                 <button
                   onClick={handleSignOut}
-                  className="text-ink-500 hover:text-rose-600"
+                  className="text-ink-500 hover:text-check-600"
                 >
                   연결 해제
                 </button>
@@ -250,16 +250,16 @@ export default function Profile() {
           )}
 
           {sync.lastError && (
-            <div className="text-xs text-rose-600 bg-rose-50 border border-rose-100 rounded-lg p-2">
+            <div className="text-xs text-check-600 bg-check-50 border border-check-100 rounded-lg p-2">
               <p className="font-medium">⚠ 마지막 동기화 오류</p>
               <p className="mt-1 break-words">{sync.lastError}</p>
             </div>
           )}
           {drive.signInError && (
-            <p className="text-xs text-rose-600">⚠ 로그인 오류: {drive.signInError}</p>
+            <p className="text-xs text-check-600">⚠ 로그인 오류: {drive.signInError}</p>
           )}
           {drive.initError && (
-            <p className="text-xs text-rose-600">⚠ 초기화 오류: {drive.initError}</p>
+            <p className="text-xs text-check-600">⚠ 초기화 오류: {drive.initError}</p>
           )}
 
           {/* 진단 — 두 기기에서 비교해보면 동기화 안 되는 원인 파악 가능 */}
@@ -286,7 +286,7 @@ export default function Profile() {
       </section>
 
       <section className="px-5 mt-4">
-        <div className="rounded-xl bg-white shadow-soft border border-slate-200/80 p-5 space-y-3">
+        <div className="rounded-xl bg-white shadow-soft border border-ink-200/80 p-5 space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="font-semibold text-ink-900">날짜 알림</h3>
             <span className="text-[11px] text-ink-400">
@@ -308,7 +308,7 @@ export default function Profile() {
             </button>
           )}
           {notifPerm === 'denied' && (
-            <p className="text-xs text-rose-600 bg-rose-50 border border-rose-100 rounded-lg p-2">
+            <p className="text-xs text-check-600 bg-check-50 border border-check-100 rounded-lg p-2">
               브라우저에서 알림이 차단되어 있어요. 주소창의 자물쇠 아이콘 → 알림 권한을 허용으로 바꾸면 다시 사용할 수 있습니다.
             </p>
           )}
@@ -319,11 +319,11 @@ export default function Profile() {
       </section>
 
       <section className="px-5 mt-4">
-        <div className="rounded-xl bg-white shadow-soft border border-slate-200/80 p-5 space-y-3">
+        <div className="rounded-xl bg-white shadow-soft border border-ink-200/80 p-5 space-y-3">
           <h3 className="font-semibold text-ink-900">로컬 백업</h3>
           <button
             onClick={exportJson}
-            className="w-full px-4 py-3 rounded-xl bg-white text-ink-900 font-medium border border-slate-200/80"
+            className="w-full px-4 py-3 rounded-xl bg-white text-ink-900 font-medium border border-ink-200/80"
           >
             JSON 으로 내보내기
           </button>

@@ -23,27 +23,27 @@ const palette: Record<MemoType, {
   emoji: string
 }> = {
   note: {
-    card: 'bg-emerald-50/80',
-    iconBg: 'bg-emerald-200',
-    iconRing: 'ring-emerald-300/60',
-    bar: 'bg-emerald-500',
-    barTrack: 'bg-emerald-100',
+    card: 'bg-note-50/80',
+    iconBg: 'bg-note-200',
+    iconRing: 'ring-note-300/60',
+    bar: 'bg-note-500',
+    barTrack: 'bg-note-100',
     emoji: '📝',
   },
   checklist: {
-    card: 'bg-rose-50/80',
-    iconBg: 'bg-rose-200',
-    iconRing: 'ring-rose-300/60',
-    bar: 'bg-rose-500',
-    barTrack: 'bg-rose-100',
+    card: 'bg-check-50/80',
+    iconBg: 'bg-check-200',
+    iconRing: 'ring-check-300/60',
+    bar: 'bg-check-500',
+    barTrack: 'bg-check-100',
     emoji: '✅',
   },
   todo: {
-    card: 'bg-sky-50/80',
-    iconBg: 'bg-sky-200',
-    iconRing: 'ring-sky-300/60',
-    bar: 'bg-sky-500',
-    barTrack: 'bg-sky-100',
+    card: 'bg-todo-50/80',
+    iconBg: 'bg-todo-200',
+    iconRing: 'ring-todo-300/60',
+    bar: 'bg-todo-500',
+    barTrack: 'bg-todo-100',
     emoji: '🎯',
   },
 }
@@ -67,7 +67,7 @@ export function MemoCard({ memo, variant = 'card' }: { memo: Memo; variant?: Mem
       <Link
         to={`/memo/${memo.id}`}
         className={[
-          'group flex items-center gap-2.5 rounded-lg border border-slate-200/80 shadow-soft hover:shadow-card transition-shadow pl-1.5 pr-3 py-2 overflow-hidden',
+          'group flex items-center gap-2.5 rounded-lg border border-ink-200/80 shadow-soft hover:shadow-card transition-shadow pl-1.5 pr-3 py-2 overflow-hidden',
           c.card,
         ].join(' ')}
       >
@@ -82,12 +82,12 @@ export function MemoCard({ memo, variant = 'card' }: { memo: Memo; variant?: Mem
           <span aria-hidden>{c.emoji}</span>
         </div>
         <div className="flex-1 min-w-0 inline-flex items-center gap-1.5">
-          {memo.pinned && <span className="text-amber-500 text-[10px] shrink-0">📌</span>}
+          {memo.pinned && <span className="text-gold-500 text-[10px] shrink-0">📌</span>}
           <span className="text-sm font-medium text-ink-900 truncate">
             {memo.title || '제목 없음'}
           </span>
           {memo.type === 'todo' && memo.done && (
-            <span className="shrink-0 text-[10px] text-emerald-700 font-medium">✓</span>
+            <span className="shrink-0 text-[10px] text-note-700 font-medium">✓</span>
           )}
           {memo.type === 'checklist' && checklistTotal > 0 && (
             <span className="shrink-0 text-[10px] text-ink-400 tabular-nums">
@@ -99,7 +99,7 @@ export function MemoCard({ memo, variant = 'card' }: { memo: Memo; variant?: Mem
           <span
             className={[
               'shrink-0 text-[11px] tabular-nums',
-              overdue && !memo.done ? 'text-rose-600 font-medium' : 'text-ink-500',
+              overdue && !memo.done ? 'text-check-600 font-medium' : 'text-ink-500',
             ].join(' ')}
           >
             {due}
@@ -113,7 +113,7 @@ export function MemoCard({ memo, variant = 'card' }: { memo: Memo; variant?: Mem
     <Link
       to={`/memo/${memo.id}`}
       className={[
-        'group block rounded-xl shadow-soft hover:shadow-card transition-shadow border border-slate-200/80 overflow-hidden',
+        'group block rounded-xl shadow-soft hover:shadow-card transition-shadow border border-ink-200/80 overflow-hidden',
         c.card,
       ].join(' ')}
     >
@@ -132,7 +132,7 @@ export function MemoCard({ memo, variant = 'card' }: { memo: Memo; variant?: Mem
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5">
               <span className="text-[11px] font-medium text-ink-500">{meta.label}</span>
-              {memo.pinned && <span className="text-amber-500 text-xs">📌</span>}
+              {memo.pinned && <span className="text-gold-500 text-xs">📌</span>}
             </div>
             <h3 className="mt-0.5 font-semibold text-ink-900 truncate">
               {memo.title || '제목 없음'}
@@ -145,7 +145,7 @@ export function MemoCard({ memo, variant = 'card' }: { memo: Memo; variant?: Mem
 
             <div className="mt-2 flex items-center gap-3 text-xs text-ink-500">
               {due && (
-                <span className={['inline-flex items-center gap-1', overdue && !memo.done ? 'text-rose-600 font-medium' : ''].join(' ')}>
+                <span className={['inline-flex items-center gap-1', overdue && !memo.done ? 'text-check-600 font-medium' : ''].join(' ')}>
                   📅 {due}
                 </span>
               )}
@@ -156,7 +156,7 @@ export function MemoCard({ memo, variant = 'card' }: { memo: Memo; variant?: Mem
                 </span>
               )}
               {memo.type === 'todo' && memo.done && (
-                <span className="inline-flex items-center gap-1 text-emerald-700 font-medium">✓ 완료</span>
+                <span className="inline-flex items-center gap-1 text-note-700 font-medium">✓ 완료</span>
               )}
             </div>
           </div>

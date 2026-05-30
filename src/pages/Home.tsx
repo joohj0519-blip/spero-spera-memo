@@ -13,19 +13,19 @@ const actionMeta: Record<MemoType, { emoji: string; label: string; desc: string;
     emoji: '📝',
     label: '메모 작성',
     desc: '자유롭게 적어두기',
-    iconBg: 'bg-emerald-100',
+    iconBg: 'bg-note-100',
   },
   checklist: {
     emoji: '✅',
     label: '체크리스트',
     desc: '항목별로 정리하기',
-    iconBg: 'bg-rose-100',
+    iconBg: 'bg-check-100',
   },
   todo: {
     emoji: '🎯',
     label: '할 일 추가',
     desc: '오늘의 미션',
-    iconBg: 'bg-sky-100',
+    iconBg: 'bg-todo-100',
   },
 }
 
@@ -52,7 +52,7 @@ export default function Home() {
         {/* Title — 디스크 바로 아래에 'S' 가 오도록 (손→디스크→S 세로 정렬) */}
         <div className="absolute left-[calc(36%-60px)] bottom-[calc(16%-20px)] text-left z-10 whitespace-nowrap">
           <h1 className="font-semibold text-ink-900 leading-none tracking-tight text-[53px]">
-            SPERO SPERA<span className="text-amber-500">.</span>
+            SPERO SPERA<span className="text-gold-500">.</span>
           </h1>
           <p className="mt-3 text-[14px] text-ink-500 tracking-wide text-right">
             <span className="italic">dum spiro, spero</span>
@@ -111,7 +111,7 @@ function ActionRow({ type }: { type: MemoType }) {
   return (
     <Link
       to={`/new?type=${type}`}
-      className="group flex items-center gap-4 rounded-xl bg-white/90 border border-slate-200/80 shadow-soft hover:shadow-card active:scale-[0.995] transition-all px-4 py-3.5"
+      className="group flex items-center gap-4 rounded-xl bg-white/90 border border-ink-200/80 shadow-soft hover:shadow-card active:scale-[0.995] transition-all px-4 py-3.5"
     >
       <div
         className={[

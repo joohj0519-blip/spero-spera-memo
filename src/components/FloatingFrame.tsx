@@ -69,7 +69,7 @@ export function FloatingFrame({ children }: { children: ReactNode }) {
         width: FRAME_W,
         height: `min(${FRAME_H}px, calc(100vh - 32px))`,
         background:
-          'linear-gradient(180deg, #fafaf9 0%, #f5f5f4 60%, #e7e5e4 100%)',
+          'linear-gradient(180deg, #F4F1EA 0%, #EFEADF 60%, #E3DBCE 100%)',
       }}
     >
       <div

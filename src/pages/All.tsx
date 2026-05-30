@@ -59,7 +59,7 @@ export default function All() {
               'w-10 h-10 grid place-items-center rounded-xl border transition-colors',
               searchOpen
                 ? 'bg-ink-900 text-white border-ink-900'
-                : 'bg-white text-ink-700 border-slate-200/80 shadow-soft',
+                : 'bg-white text-ink-700 border-ink-200/80 shadow-soft',
             ].join(' ')}
           >
             <SearchIcon />
@@ -69,7 +69,7 @@ export default function All() {
 
       {searchOpen && (
         <div className="px-5 mb-3">
-          <label className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-white shadow-soft border border-slate-200/80">
+          <label className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-white shadow-soft border border-ink-200/80">
             <SearchIcon className="text-ink-400" width={18} height={18} />
             <input
               autoFocus
@@ -102,7 +102,7 @@ export default function All() {
                 'px-2 py-1.5 rounded-xl text-sm whitespace-nowrap border transition-colors text-center',
                 active
                   ? 'bg-ink-900 text-white border-ink-900'
-                  : 'bg-white text-ink-700 border-slate-200/80 shadow-soft',
+                  : 'bg-white text-ink-700 border-ink-200/80 shadow-soft',
               ].join(' ')}
             >
               {f.label}

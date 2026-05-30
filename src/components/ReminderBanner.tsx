@@ -53,12 +53,12 @@ export function ReminderBanner() {
 
   return (
     <div className="px-3 pt-2">
-      <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-50 border border-amber-200 shadow-soft">
+      <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-gold-50 border border-gold-200 shadow-soft">
         <span aria-hidden className="text-base leading-none">🔔</span>
-        <Link to="/all" className="flex-1 min-w-0 text-xs text-amber-900 inline-flex items-center gap-1.5">
+        <Link to="/all" className="flex-1 min-w-0 text-xs text-gold-900 inline-flex items-center gap-1.5">
           <span className={[
             'shrink-0 px-1.5 py-0.5 rounded-md text-[10px] font-semibold',
-            first.daysOverdue === 0 ? 'bg-amber-200 text-amber-900' : 'bg-rose-200 text-rose-900',
+            first.daysOverdue === 0 ? 'bg-gold-200 text-gold-900' : 'bg-check-200 text-check-900',
           ].join(' ')}>
             {dueLabel}
           </span>
@@ -66,12 +66,12 @@ export function ReminderBanner() {
             {first.memo.title || '제목 없음'}
           </span>
           {more > 0 && (
-            <span className="shrink-0 text-amber-700/80">외 {more}건</span>
+            <span className="shrink-0 text-gold-700/80">외 {more}건</span>
           )}
         </Link>
         <button
           onClick={() => { snoozeBannerToday(); setSnoozed(true) }}
-          className="text-amber-700/70 hover:text-amber-900 text-xs px-1"
+          className="text-gold-700/70 hover:text-gold-900 text-xs px-1"
           aria-label="오늘 숨기기"
         >
           ✕

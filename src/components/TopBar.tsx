@@ -34,7 +34,7 @@ export function TopBar({
       {right ?? (
         <Link
           to="/profile"
-          className="w-10 h-10 rounded-full bg-gradient-to-br from-sky-200 to-blue-300 grid place-items-center shadow-soft text-blue-900 font-semibold"
+          className="w-10 h-10 rounded-full bg-gradient-to-br from-todo-200 to-todo-300 grid place-items-center shadow-soft text-todo-900 font-semibold"
           aria-label="프로필"
         >
           나
