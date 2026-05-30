@@ -12,7 +12,11 @@ export const newId = () =>
 function triggerPush() {
   // 순환 import 방지를 위해 동적 로드
   import('./lib/sync')
-    .then(({ requestPush }) => requestPush())
+    .then(({ requestPush, emitMemosChanged }) => {
+      // 로컬 변경 즉시 화면 반영 (알림 배너·목록이 완료/삭제 상태를 바로 다시 읽음)
+      emitMemosChanged()
+      requestPush()
+    })
     .catch(() => { /* sync 모듈 미사용 환경에서는 무시 */ })
 }
 

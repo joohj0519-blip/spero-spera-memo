@@ -44,6 +44,11 @@ function notifyMemos() {
   memoListeners.forEach((cb) => { try { cb() } catch { /* ignore */ } })
 }
 
+/** 로컬에서 메모를 저장/삭제했을 때 호출 — 구독 중인 화면(알림 배너·목록)이 즉시 다시 읽도록. */
+export function emitMemosChanged() {
+  notifyMemos()
+}
+
 let inFlight: Promise<void> | null = null
 
 async function runSync(reason: string): Promise<void> {
