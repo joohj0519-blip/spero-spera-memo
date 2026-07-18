@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { listMemos } from '../db'
+import { listMemos, listVisibleMemos } from '../db'
 import type { Memo } from '../types'
 import { MEMO_TYPE_META } from '../types'
 import { TopBar } from '../components/TopBar'
@@ -44,7 +44,7 @@ export default function Profile() {
   )
 
   useEffect(() => {
-    const reload = () => { void listMemos().then(setMemos) }
+    const reload = () => { void listVisibleMemos().then(setMemos) }
     reload()
     return onMemosChanged(reload)
   }, [])
@@ -105,8 +105,9 @@ export default function Profile() {
     0,
   )
 
-  const exportJson = () => {
-    const data = JSON.stringify(memos, null, 2)
+  const exportJson = async () => {
+    const all = await listMemos() // 백업에는 대시보드 설정까지 전부 포함
+    const data = JSON.stringify(all, null, 2)
     const blob = new Blob([data], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')

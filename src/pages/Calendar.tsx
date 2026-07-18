@@ -10,7 +10,7 @@ import {
   startOfWeek,
 } from 'date-fns'
 import { ko } from 'date-fns/locale'
-import { listMemos } from '../db'
+import { listVisibleMemos } from '../db'
 import { onMemosChanged } from '../lib/sync'
 import type { Memo } from '../types'
 import { TopBar } from '../components/TopBar'
@@ -22,7 +22,7 @@ export default function CalendarView() {
   const [selected, setSelected] = useState<Date | null>(new Date())
 
   useEffect(() => {
-    const reload = () => { void listMemos().then(setMemos) }
+    const reload = () => { void listVisibleMemos().then(setMemos) }
     reload()
     return onMemosChanged(reload)
   }, [])

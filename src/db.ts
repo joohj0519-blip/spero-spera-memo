@@ -20,6 +20,9 @@ function triggerPush() {
     .catch(() => { /* sync 모듈 미사용 환경에서는 무시 */ })
 }
 
+/** 대시보드 설정을 담아 두는 예약 메모 id (메모 목록에는 노출하지 않음). */
+export const DASHBOARD_ID = '__dashboard__'
+
 export async function listMemos(): Promise<Memo[]> {
   const allKeys = await keys()
   const memoKeys = allKeys.filter((k): k is string => typeof k === 'string' && k.startsWith(PREFIX))
@@ -30,6 +33,11 @@ export async function listMemos(): Promise<Memo[]> {
       if (a.pinned !== b.pinned) return a.pinned ? -1 : 1
       return b.updatedAt - a.updatedAt
     })
+}
+
+/** 화면 목록용 — 대시보드 예약 메모를 제외한 실제 메모만. (동기화는 listMemos 를 그대로 사용) */
+export async function listVisibleMemos(): Promise<Memo[]> {
+  return (await listMemos()).filter((m) => m.id !== DASHBOARD_ID)
 }
 
 export async function getMemo(id: string): Promise<Memo | undefined> {

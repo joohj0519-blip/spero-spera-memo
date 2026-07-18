@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { listMemos } from '../db'
+import { listVisibleMemos } from '../db'
 import { onMemosChanged } from '../lib/sync'
 import type { Memo, MemoType } from '../types'
 import { MEMO_TYPE_META } from '../types'
@@ -21,7 +21,7 @@ export default function All() {
   const [q, setQ] = useState('')
 
   useEffect(() => {
-    const reload = () => { void listMemos().then(setMemos) }
+    const reload = () => { void listVisibleMemos().then(setMemos) }
     reload()
     return onMemosChanged(reload)
   }, [])

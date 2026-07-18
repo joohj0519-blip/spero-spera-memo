@@ -1,11 +1,12 @@
 import { NavLink } from 'react-router-dom'
-import { HomeIcon, CalendarIcon, GridIcon, UserIcon } from './Icons'
+import { HomeIcon, CalendarIcon, GridIcon, UserIcon, BriefcaseIcon } from './Icons'
 import type { ComponentType, SVGProps } from 'react'
 
 type Tab = { to: string; label: string; Icon: ComponentType<SVGProps<SVGSVGElement>>; end?: boolean }
 
 const tabs: Tab[] = [
   { to: '/', label: '홈', Icon: HomeIcon, end: true },
+  { to: '/dashboard', label: '업무', Icon: BriefcaseIcon },
   { to: '/calendar', label: '캘린더', Icon: CalendarIcon },
   { to: '/all', label: '모두', Icon: GridIcon },
   { to: '/profile', label: '프로필', Icon: UserIcon },
@@ -22,7 +23,7 @@ export function BottomNav() {
             end={end}
             className={({ isActive }) =>
               [
-                'flex flex-col items-center justify-center gap-0.5 rounded-xl px-4 py-2 transition-colors',
+                'flex flex-col items-center justify-center gap-0.5 rounded-xl px-2.5 py-2 transition-colors',
                 isActive ? 'text-ink-900' : 'text-ink-400 hover:text-ink-700',
               ].join(' ')
             }

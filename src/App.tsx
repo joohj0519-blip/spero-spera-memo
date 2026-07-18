@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import { FloatingFrame } from './components/FloatingFrame'
 import Home from './pages/Home'
+import Dashboard from './pages/Dashboard'
 import Editor from './pages/Editor'
 import Detail from './pages/Detail'
 import All from './pages/All'
@@ -21,6 +22,7 @@ export default function App() {
       <FloatingFrame>
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/new" element={<Editor />} />
           <Route path="/memo/:id" element={<Detail />} />
           <Route path="/memo/:id/edit" element={<Editor />} />

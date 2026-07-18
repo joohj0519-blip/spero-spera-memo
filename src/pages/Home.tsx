@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
-import { listMemos } from '../db'
+import { listVisibleMemos } from '../db'
 import { onMemosChanged } from '../lib/sync'
 import type { Memo, MemoType } from '../types'
 
@@ -33,7 +33,7 @@ export default function Home() {
   const [memos, setMemos] = useState<Memo[]>([])
 
   useEffect(() => {
-    const reload = () => { void listMemos().then(setMemos) }
+    const reload = () => { void listVisibleMemos().then(setMemos) }
     reload()
     return onMemosChanged(reload)
   }, [])
