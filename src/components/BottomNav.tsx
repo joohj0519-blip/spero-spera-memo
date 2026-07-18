@@ -13,10 +13,13 @@ const tabs: Tab[] = [
 ]
 
 export function BottomNav() {
+  // 대시보드 안에 iframe 으로 끼워 넣었을 때는 '업무' 탭 숨김 (재귀 방지)
+  const embedded = typeof window !== 'undefined' && window.self !== window.top
+  const shown = embedded ? tabs.filter((t) => t.to !== '/dashboard') : tabs
   return (
     <nav className="shrink-0 px-3 safe-bottom pt-1">
       <div className="flex items-center justify-around rounded-xl bg-white/95 backdrop-blur shadow-card border border-ink-200/70 px-2 py-2">
-        {tabs.map(({ to, label, Icon, end }) => (
+        {shown.map(({ to, label, Icon, end }) => (
           <NavLink
             key={to}
             to={to}

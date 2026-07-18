@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { TopBar } from '../components/TopBar'
 import { onMemosChanged } from '../lib/sync'
 import {
   AREAS,
@@ -10,6 +9,8 @@ import {
   classify,
 } from '../lib/dashboard'
 import type { AreaData, DashData, DashLink } from '../lib/dashboard'
+
+const BASE = import.meta.env.BASE_URL
 
 export default function Dashboard() {
   const [data, setData] = useState<DashData>({})
@@ -47,49 +48,84 @@ export default function Dashboard() {
   const groups = areaData(a.id)
 
   return (
-    <div className="pb-32">
-      <TopBar title="업무 대시보드" subtitle="자주 쓰는 링크·서식을 한 곳에" />
-
-      {/* ── 업무 탭 (표 형식) ── */}
-      <div className="px-4">
-        <div className="grid grid-cols-2 rounded-lg overflow-hidden border border-ink-200 bg-white/50">
+    <div className="h-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 divide-y lg:divide-y-0 lg:divide-x divide-ink-200/70">
+      {/* ① 업무 목록 */}
+      <aside className="flex flex-col min-h-0 min-w-0">
+        <PanelHead title="업무" />
+        <ul className="flex-1 overflow-y-auto p-2 space-y-1">
           {AREAS.map((area, i) => {
             const on = i === sel
-            const lastRow = i >= AREAS.length - 2
             return (
-              <button
-                key={area.id}
-                onClick={() => setSel(i)}
-                className={[
-                  'flex items-center gap-2 px-3 py-2.5 text-[13px] leading-tight text-left transition-colors border-ink-200',
-                  i % 2 === 0 ? 'border-r' : '',
-                  lastRow ? '' : 'border-b',
-                  on ? 'bg-white text-ink-900 font-semibold' : 'text-ink-600 hover:bg-white/70',
-                ].join(' ')}
-                style={on ? { boxShadow: `inset 0 3px 0 ${area.accent}` } : undefined}
-              >
-                <span aria-hidden className="shrink-0">{area.emoji}</span>
-                <span>{area.name}</span>
-              </button>
+              <li key={area.id}>
+                <button
+                  onClick={() => setSel(i)}
+                  className={[
+                    'w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-left text-sm transition-colors',
+                    on ? 'bg-white shadow-soft font-semibold text-ink-900' : 'text-ink-600 hover:bg-white/60',
+                  ].join(' ')}
+                  style={on ? { boxShadow: `inset 3px 0 0 ${area.accent}` } : undefined}
+                >
+                  <span
+                    className="shrink-0 w-8 h-8 rounded-lg grid place-items-center text-base"
+                    style={{ background: area.soft }}
+                  >
+                    {area.emoji}
+                  </span>
+                  <span>{area.name}</span>
+                </button>
+              </li>
             )
           })}
-        </div>
-      </div>
+        </ul>
+      </aside>
 
-      {/* ── 선택한 업무 내용 ── */}
-      <div className="px-4 mt-3 space-y-3">
-        {GROUP_LABELS.map((label, gi) => (
-          <Section
-            key={gi}
-            label={label}
-            gi={gi}
-            accent={a.accent}
-            links={groups[gi]}
-            onAdd={(name, url) => void addLink(a.id, gi, name, url)}
-            onDel={(idx) => void delLink(a.id, gi, idx)}
-          />
-        ))}
-      </div>
+      {/* ② 선택한 업무 상세 */}
+      <section className="flex flex-col min-h-0 min-w-0 bg-white/15">
+        <PanelHead title={a.name} emoji={a.emoji} accent={a.accent} />
+        <div className="flex-1 overflow-y-auto p-3 space-y-3">
+          {GROUP_LABELS.map((label, gi) => (
+            <Section
+              key={gi}
+              label={label}
+              gi={gi}
+              accent={a.accent}
+              links={groups[gi]}
+              onAdd={(name, url) => void addLink(a.id, gi, name, url)}
+              onDel={(idx) => void delLink(a.id, gi, idx)}
+            />
+          ))}
+        </div>
+      </section>
+
+      {/* ③ 캘린더 */}
+      <section className="flex flex-col min-h-0 min-w-0">
+        <PanelHead title="캘린더" />
+        <iframe
+          title="캘린더"
+          src={`${BASE}calendar?embed=1`}
+          className="flex-1 w-full border-0 bg-transparent"
+        />
+      </section>
+
+      {/* ④ 메모 */}
+      <section className="flex flex-col min-h-0 min-w-0">
+        <PanelHead title="메모" />
+        <iframe
+          title="메모"
+          src={BASE}
+          className="flex-1 w-full border-0 bg-transparent"
+        />
+      </section>
+    </div>
+  )
+}
+
+function PanelHead({ title, emoji, accent }: { title: string; emoji?: string; accent?: string }) {
+  return (
+    <div className="shrink-0 flex items-center gap-2 px-4 h-12 border-b border-ink-200/70 bg-white/40 backdrop-blur-sm">
+      {accent && <span className="w-1.5 h-4 rounded-full" style={{ background: accent }} />}
+      {emoji && <span className="text-lg">{emoji}</span>}
+      <span className="font-semibold text-ink-900 text-[15px]">{title}</span>
     </div>
   )
 }

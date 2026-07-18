@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ReactNode, PointerEvent as RPointerEvent } from 'react'
+import { useLocation } from 'react-router-dom'
 import { BottomNav } from './BottomNav'
 import { ReminderBanner } from './ReminderBanner'
 import { useStandalone } from '../hooks/usePwa'
@@ -10,6 +11,9 @@ const TOP_OFFSET = 16
 
 export function FloatingFrame({ children }: { children: ReactNode }) {
   const isStandalone = useStandalone()
+  const location = useLocation()
+  const fullWidth = location.pathname.startsWith('/dashboard')
+  const embed = new URLSearchParams(location.search).get('embed') === '1'
   const [isDesktop, setIsDesktop] = useState(false)
   const [pos, setPos] = useState({ x: 0, y: TOP_OFFSET })
   const drag = useRef<{ startX: number; startY: number; px: number; py: number } | null>(null)
@@ -47,6 +51,22 @@ export function FloatingFrame({ children }: { children: ReactNode }) {
   }
   const onUp = () => {
     drag.current = null
+  }
+
+  // 대시보드 안에 iframe 으로 끼워 넣을 때: 하단 네비·배너 없이 알맹이만
+  if (embed) {
+    return <div className="min-h-screen flex flex-col w-full">{children}</div>
+  }
+
+  // 업무 대시보드: 데스크톱 전체 폭 사용 (작은 플로팅 창 대신)
+  if (fullWidth) {
+    return (
+      <div className="h-screen flex flex-col w-full">
+        <ReminderBanner />
+        <div className="flex-1 min-h-0">{children}</div>
+        <BottomNav />
+      </div>
+    )
   }
 
   // 1) 모바일 OR 2) 별도 창으로 설치되어 standalone 으로 실행 중

@@ -20,6 +20,7 @@ export default function CalendarView() {
   const [memos, setMemos] = useState<Memo[]>([])
   const [month, setMonth] = useState(() => new Date())
   const [selected, setSelected] = useState<Date | null>(new Date())
+  const [view, setView] = useState<'month' | 'week'>('month')
 
   useEffect(() => {
     const reload = () => { void listVisibleMemos().then(setMemos) }
@@ -28,6 +29,11 @@ export default function CalendarView() {
   }, [])
 
   const weeks = useMemo(() => {
+    if (view === 'week') {
+      const base = selected ?? new Date()
+      const start = startOfWeek(base, { weekStartsOn: 0 })
+      return [Array.from({ length: 7 }, (_, i) => new Date(start.getTime() + i * 24 * 3600 * 1000))]
+    }
     const start = startOfWeek(startOfMonth(month), { weekStartsOn: 0 })
     const end = endOfWeek(endOfMonth(month), { weekStartsOn: 0 })
     const days: Date[] = []
@@ -37,7 +43,19 @@ export default function CalendarView() {
     const w: Date[][] = []
     for (let i = 0; i < days.length; i += 7) w.push(days.slice(i, i + 7))
     return w
-  }, [month])
+  }, [view, month, selected])
+
+  // 이전/다음: 월 보기는 한 달씩, 주 보기는 한 주씩 이동
+  const go = (dir: number) => {
+    if (view === 'week') {
+      const base = selected ?? new Date()
+      const nb = new Date(base.getTime() + dir * 7 * 24 * 3600 * 1000)
+      setSelected(nb)
+      setMonth(nb)
+    } else {
+      setMonth(addMonths(month, dir))
+    }
+  }
 
   const memosByDate = useMemo(() => {
     const map = new Map<string, Memo[]>()
@@ -60,24 +78,40 @@ export default function CalendarView() {
 
       <div className="px-5">
         <div className="rounded-xl bg-white shadow-soft border border-ink-200/80 p-3">
-          <div className="flex items-center justify-between mb-2 px-2">
+          <div className="flex items-center justify-between mb-2 px-1">
             <button
-              onClick={() => setMonth(addMonths(month, -1))}
+              onClick={() => go(-1)}
               className="px-2 py-1 text-ink-500 hover:text-ink-900"
             >
               ‹
             </button>
+            <div className="flex items-center gap-1">
+              <div className="flex rounded-lg bg-ink-100/70 p-0.5">
+                {(['month', 'week'] as const).map((v) => (
+                  <button
+                    key={v}
+                    onClick={() => setView(v)}
+                    className={[
+                      'px-2.5 py-1 rounded-md text-xs transition-colors',
+                      view === v ? 'bg-white shadow-soft text-ink-900 font-semibold' : 'text-ink-500',
+                    ].join(' ')}
+                  >
+                    {v === 'month' ? '월' : '주'}
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={() => {
+                  setMonth(new Date())
+                  setSelected(new Date())
+                }}
+                className="text-xs text-ink-500 px-2 py-1 rounded-lg hover:bg-ink-900/5"
+              >
+                오늘
+              </button>
+            </div>
             <button
-              onClick={() => {
-                setMonth(new Date())
-                setSelected(new Date())
-              }}
-              className="text-xs text-ink-500 px-2 py-1 rounded-xl hover:bg-ink-900/5"
-            >
-              오늘
-            </button>
-            <button
-              onClick={() => setMonth(addMonths(month, 1))}
+              onClick={() => go(1)}
               className="px-2 py-1 text-ink-500 hover:text-ink-900"
             >
               ›
@@ -96,7 +130,7 @@ export default function CalendarView() {
           <div className="grid grid-cols-7 gap-y-1">
             {weeks.flat().map((d) => {
               const key = format(d, 'yyyy-MM-dd')
-              const inMonth = isSameMonth(d, month)
+              const dim = view === 'month' && !isSameMonth(d, month)
               const isSelected = selected && isSameDay(d, selected)
               const isToday = isSameDay(d, new Date())
               const has = memosByDate.has(key)
@@ -106,8 +140,8 @@ export default function CalendarView() {
                   onClick={() => setSelected(d)}
                   className={[
                     'aspect-square flex flex-col items-center justify-center rounded-lg text-sm relative',
-                    !inMonth && 'text-ink-400/60',
-                    inMonth && !isSelected && 'text-ink-900 hover:bg-ink-900/5',
+                    dim && 'text-ink-400/60',
+                    !dim && !isSelected && 'text-ink-900 hover:bg-ink-900/5',
                     isSelected && 'bg-ink-900 text-white font-semibold',
                   ]
                     .filter(Boolean)
