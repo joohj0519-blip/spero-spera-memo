@@ -11,6 +11,8 @@ import {
 import type { AreaData, DashData, DashLink } from '../lib/dashboard'
 
 const BASE = import.meta.env.BASE_URL
+const COMMON_ID = '__common__'   // 특정 업무에 속하지 않는 공통 링크
+const COMMON_ACCENT = '#b5883c'  // 허니 앰버(포인트)
 
 export default function Dashboard() {
   const [data, setData] = useState<DashData>({})
@@ -48,7 +50,7 @@ export default function Dashboard() {
   const groups = areaData(a.id)
 
   return (
-    <div className="h-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 divide-y lg:divide-y-0 lg:divide-x divide-ink-200/70">
+    <div className="h-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 divide-y lg:divide-y-0 lg:divide-x divide-ink-200/70">
       {/* ① 업무 목록 */}
       <aside className="flex flex-col min-h-0 min-w-0">
         <PanelHead title="업무" />
@@ -97,7 +99,22 @@ export default function Dashboard() {
         </div>
       </section>
 
-      {/* ③ 캘린더 */}
+      {/* ③ 공통 업무 링크 (한가운데) */}
+      <section className="flex flex-col min-h-0 min-w-0 bg-white/15">
+        <PanelHead title="공통 업무" emoji="⭐" accent={COMMON_ACCENT} />
+        <div className="flex-1 overflow-y-auto p-3">
+          <Section
+            label="공통 링크"
+            gi={0}
+            accent={COMMON_ACCENT}
+            links={areaData(COMMON_ID)[0]}
+            onAdd={(name, url) => void addLink(COMMON_ID, 0, name, url)}
+            onDel={(idx) => void delLink(COMMON_ID, 0, idx)}
+          />
+        </div>
+      </section>
+
+      {/* ④ 캘린더 */}
       <section className="flex flex-col min-h-0 min-w-0">
         <PanelHead title="캘린더" />
         <iframe
@@ -107,7 +124,7 @@ export default function Dashboard() {
         />
       </section>
 
-      {/* ④ 메모 */}
+      {/* ⑤ 메모 */}
       <section className="flex flex-col min-h-0 min-w-0">
         <PanelHead title="메모" />
         <iframe
