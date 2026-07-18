@@ -17,6 +17,9 @@ const COMMON_ACCENT = '#b5883c'  // 허니 앰버(포인트)
 export default function Dashboard() {
   const [data, setData] = useState<DashData>({})
   const [sel, setSel] = useState(0)
+  const [areaQuery, setAreaQuery] = useState('')
+  const [detailQuery, setDetailQuery] = useState('')
+  const [commonQuery, setCommonQuery] = useState('')
 
   useEffect(() => {
     const reload = () => { void getDashboard().then(setData) }
@@ -54,8 +57,11 @@ export default function Dashboard() {
       {/* ① 업무 목록 */}
       <aside className="flex flex-col min-h-0 min-w-0">
         <PanelHead title="업무" />
+        <SearchBar value={areaQuery} onChange={setAreaQuery} placeholder="업무 검색" />
         <ul className="flex-1 overflow-y-auto p-2 space-y-1">
-          {AREAS.map((area, i) => {
+          {AREAS.map((area, i) => ({ area, i }))
+            .filter(({ area }) => !areaQuery || area.name.toLowerCase().includes(areaQuery.toLowerCase()))
+            .map(({ area, i }) => {
             const on = i === sel
             return (
               <li key={area.id}>
@@ -84,6 +90,7 @@ export default function Dashboard() {
       {/* ② 선택한 업무 상세 */}
       <section className="flex flex-col min-h-0 min-w-0 bg-white/15">
         <PanelHead title={a.name} emoji={a.emoji} accent={a.accent} />
+        <SearchBar value={detailQuery} onChange={setDetailQuery} placeholder={`${a.name} 검색`} />
         <div className="flex-1 overflow-y-auto p-3 space-y-3">
           {GROUP_LABELS.map((label, gi) => (
             <Section
@@ -92,6 +99,7 @@ export default function Dashboard() {
               gi={gi}
               accent={a.accent}
               links={groups[gi]}
+              query={detailQuery}
               onAdd={(name, url) => void addLink(a.id, gi, name, url)}
               onDel={(idx) => void delLink(a.id, gi, idx)}
             />
@@ -102,12 +110,14 @@ export default function Dashboard() {
       {/* ③ 공통 업무 링크 (한가운데) */}
       <section className="flex flex-col min-h-0 min-w-0 bg-white/15">
         <PanelHead title="공통 업무" emoji="⭐" accent={COMMON_ACCENT} />
+        <SearchBar value={commonQuery} onChange={setCommonQuery} placeholder="공통 링크 검색" />
         <div className="flex-1 overflow-y-auto p-3">
           <Section
             label="공통 링크"
             gi={0}
             accent={COMMON_ACCENT}
             links={areaData(COMMON_ID)[0]}
+            query={commonQuery}
             onAdd={(name, url) => void addLink(COMMON_ID, 0, name, url)}
             onDel={(idx) => void delLink(COMMON_ID, 0, idx)}
           />
@@ -148,11 +158,36 @@ function PanelHead({ title, emoji, accent }: { title: string; emoji?: string; ac
 }
 
 /* ── 한 그룹(링크 / 서식 / 자료·메모) ── */
+function SearchBar({
+  value,
+  onChange,
+  placeholder,
+}: {
+  value: string
+  onChange: (v: string) => void
+  placeholder: string
+}) {
+  return (
+    <div className="shrink-0 px-3 pt-2 pb-1">
+      <div className="relative">
+        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-400 text-xs">🔍</span>
+        <input
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          className="w-full rounded-lg border border-ink-200 bg-white/80 pl-8 pr-3 py-1.5 text-[13px] text-ink-900 outline-none focus:border-ink-400 transition-colors placeholder:text-ink-400"
+        />
+      </div>
+    </div>
+  )
+}
+
 function Section({
   label,
   gi,
   accent,
   links,
+  query = '',
   onAdd,
   onDel,
 }: {
@@ -160,6 +195,7 @@ function Section({
   gi: number
   accent: string
   links: DashLink[]
+  query?: string
   onAdd: (name: string, url: string) => void
   onDel: (idx: number) => void
 }) {
@@ -212,24 +248,34 @@ function Section({
         </div>
       </div>
 
-      {links.length === 0 ? (
-        <p className="text-center text-xs text-ink-400 py-5">아직 없어요</p>
-      ) : (
-        <ul>
-          {links.map((l, idx) => (
-            <li key={idx} className="flex items-center border-t border-ink-100 first:border-t-0">
-              <Row link={l} />
-              <button
-                onClick={() => onDel(idx)}
-                aria-label="삭제"
-                className="shrink-0 px-3 py-3 text-ink-300 hover:text-check-600 transition-colors text-sm"
-              >
-                ✕
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
+      {(() => {
+        if (links.length === 0) {
+          return <p className="text-center text-xs text-ink-400 py-5">아직 없어요</p>
+        }
+        const q = query.trim().toLowerCase()
+        const shown = links
+          .map((l, idx) => ({ l, idx }))
+          .filter(({ l }) => !q || l.name.toLowerCase().includes(q))
+        if (shown.length === 0) {
+          return <p className="text-center text-xs text-ink-400 py-5">검색 결과가 없어요</p>
+        }
+        return (
+          <ul>
+            {shown.map(({ l, idx }) => (
+              <li key={idx} className="flex items-center border-t border-ink-100 first:border-t-0">
+                <Row link={l} />
+                <button
+                  onClick={() => onDel(idx)}
+                  aria-label="삭제"
+                  className="shrink-0 px-3 py-3 text-ink-300 hover:text-check-600 transition-colors text-sm"
+                >
+                  ✕
+                </button>
+              </li>
+            ))}
+          </ul>
+        )
+      })()}
     </section>
   )
 }
