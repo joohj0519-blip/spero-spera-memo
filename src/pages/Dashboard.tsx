@@ -164,22 +164,21 @@ function mix(hex: string, t: [number, number, number], ratio: number) {
   const v = p.map((c, i) => Math.round(c + (t[i] - c) * ratio))
   return `rgb(${v[0]}, ${v[1]}, ${v[2]})`
 }
-const headTint = (hex: string) => mix(hex, [255, 255, 255], 0.74)  // 옅은 배경 틴트 — 안쪽 그룹 헤드용
-const headText = (hex: string) => mix(hex, [36, 27, 22], 0.35)     // 글자 — 대비 확보용으로 진하게
-// 칸 제목줄은 아예 색을 꽉 채워 한눈에 구분되게 한다.
-// 원색 그대로 깔면 흰 글씨 대비가 부족해서(예: 허니 앰버 2.9:1),
-// 먹색 쪽으로 30% 당겨 어둡게 만든 뒤 흰 글씨를 올린다(대비 4.5:1 이상).
-const headSolid = (hex: string) => mix(hex, [36, 27, 22], 0.3)
+// 배경 틴트 — 각 칸의 색을 흰색에 26% 섞은 값(= 흰색 쪽으로 74% 당김).
+// 색은 알아볼 수 있으면서 눈이 피로하지 않은 선.
+const headTint = (hex: string) => mix(hex, [255, 255, 255], 0.74)
+// 글자 — 틴트 배경 위에서 대비가 나오도록 먹색 쪽으로 35% 당겨 진하게.
+const headText = (hex: string) => mix(hex, [36, 27, 22], 0.35)
 
 function PanelHead({ title, emoji, accent = LIST_ACCENT }: { title: string; emoji?: string; accent?: string }) {
   return (
     <div
-      className="shrink-0 flex items-center gap-2 px-4 h-12"
-      style={{ background: headSolid(accent) }}
+      className="shrink-0 flex items-center gap-2 px-4 h-12 border-b-2"
+      style={{ background: headTint(accent), borderBottomColor: accent }}
     >
-      <span className="w-1.5 h-5 rounded-full shrink-0 bg-white/50" />
+      <span className="w-1.5 h-5 rounded-full shrink-0" style={{ background: accent }} />
       {emoji && <span className="text-lg">{emoji}</span>}
-      <span className="font-bold text-[15px] text-white">{title}</span>
+      <span className="font-bold text-[15px]" style={{ color: headText(accent) }}>{title}</span>
     </div>
   )
 }
