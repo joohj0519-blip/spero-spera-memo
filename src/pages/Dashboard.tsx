@@ -325,7 +325,8 @@ function Section({
         style={{ background: headTint(accent), borderBottomColor: accent }}
       >
         <span className="w-1.5 h-4 rounded-full shrink-0" style={{ background: accent }} />
-        <span className="text-[11px] w-3 shrink-0" style={{ color: headText(accent) }} aria-hidden>
+        {/* 접기 표시 삼각형 — 11px 는 너무 작다는 의견 반영해 22px(2배)로 키움 */}
+        <span className="text-[22px] leading-none w-5 shrink-0 -mt-0.5" style={{ color: headText(accent) }} aria-hidden>
           {folded ? '▸' : '▾'}
         </span>
         <span className="font-bold text-sm" style={{ color: headText(accent) }}>{label}</span>
