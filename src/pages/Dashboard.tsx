@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import type { ReactNode } from 'react'
 import { onMemosChanged } from '../lib/sync'
 import {
   AREAS,
@@ -20,12 +21,36 @@ const LIST_ACCENT = '#4A3A30'   // 업무 목록 — 진한 에스프레소(ink-
 const CAL_ACCENT  = '#9B756E'   // 캘린더 — Rose Bare
 const MEMO_ACCENT = '#7B745B'   // 메모 — Sagebound
 
+/* 어떤 그룹을 접어뒀는지는 기기별 취향이라 Drive 동기화 대상이 아니다 → 브라우저에만 저장 */
+const COLLAPSE_KEY = 'spero.dash.collapsed'
+function loadCollapsed(): Record<string, boolean> {
+  try {
+    return JSON.parse(localStorage.getItem(COLLAPSE_KEY) || '{}') as Record<string, boolean>
+  } catch {
+    return {}
+  }
+}
+
 export default function Dashboard() {
   const [data, setData] = useState<DashData>({})
   const [sel, setSel] = useState(0)
   const [areaQuery, setAreaQuery] = useState('')
   const [detailQuery, setDetailQuery] = useState('')
   const [commonQuery, setCommonQuery] = useState('')
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>(loadCollapsed)
+
+  // 접은 상태가 새로고침 후에도 유지되도록 저장
+  useEffect(() => {
+    try { localStorage.setItem(COLLAPSE_KEY, JSON.stringify(collapsed)) } catch { /* 저장 실패는 무시 */ }
+  }, [collapsed])
+
+  const toggle = (key: string) => setCollapsed((s) => ({ ...s, [key]: !s[key] }))
+  const setMany = (keys: string[], v: boolean) =>
+    setCollapsed((s) => {
+      const n = { ...s }
+      keys.forEach((k) => { n[k] = v })
+      return n
+    })
 
   useEffect(() => {
     const reload = () => { void getDashboard().then(setData) }
@@ -57,6 +82,10 @@ export default function Dashboard() {
 
   const a = AREAS[sel]
   const groups = areaData(a.id)
+  // 접기 키 — 업무마다 따로 기억한다 (방과후학교의 '링크'와 교과서의 '링크'는 별개)
+  const detailKeys = GROUP_LABELS.map((_, gi) => `${a.id}:${gi}`)
+  const detailAllFolded = detailKeys.every((k) => collapsed[k])
+  const commonKey = `${COMMON_ID}:0`
 
   return (
     // 다섯 칸을 똑같이 1/5 씩 나누면(grid-cols-5) 맨 오른쪽 메모 칸이 좁아서
@@ -99,7 +128,12 @@ export default function Dashboard() {
 
       {/* ② 선택한 업무 상세 */}
       <section className="flex flex-col min-h-0 min-w-0 bg-white/15">
-        <PanelHead title={a.name} emoji={a.emoji} accent={a.accent} />
+        <PanelHead
+          title={a.name}
+          emoji={a.emoji}
+          accent={a.accent}
+          right={<FoldAllBtn folded={detailAllFolded} accent={a.accent} onClick={() => setMany(detailKeys, !detailAllFolded)} />}
+        />
         <SearchBar value={detailQuery} onChange={setDetailQuery} placeholder={`${a.name} 검색`} />
         <div className="flex-1 overflow-y-auto p-3 space-y-3">
           {GROUP_LABELS.map((label, gi) => (
@@ -110,6 +144,8 @@ export default function Dashboard() {
               accent={a.accent}
               links={groups[gi]}
               query={detailQuery}
+              folded={!!collapsed[`:`]}
+              onFold={() => toggle(`:`)}
               onAdd={(name, url) => void addLink(a.id, gi, name, url)}
               onDel={(idx) => void delLink(a.id, gi, idx)}
             />
@@ -119,7 +155,12 @@ export default function Dashboard() {
 
       {/* ③ 공통 업무 링크 (한가운데) */}
       <section className="flex flex-col min-h-0 min-w-0 bg-white/15">
-        <PanelHead title="공통 업무" emoji="⭐" accent={COMMON_ACCENT} />
+        <PanelHead
+          title="공통 업무"
+          emoji="⭐"
+          accent={COMMON_ACCENT}
+          right={<FoldAllBtn folded={!!collapsed[commonKey]} accent={COMMON_ACCENT} onClick={() => toggle(commonKey)} />}
+        />
         <SearchBar value={commonQuery} onChange={setCommonQuery} placeholder="공통 링크 검색" />
         <div className="flex-1 overflow-y-auto p-3">
           <Section
@@ -128,6 +169,8 @@ export default function Dashboard() {
             accent={COMMON_ACCENT}
             links={areaData(COMMON_ID)[0]}
             query={commonQuery}
+            folded={!!collapsed[commonKey]}
+            onFold={() => toggle(commonKey)}
             onAdd={(name, url) => void addLink(COMMON_ID, 0, name, url)}
             onDel={(idx) => void delLink(COMMON_ID, 0, idx)}
           />
@@ -174,7 +217,17 @@ const headTint = (hex: string) => mix(hex, [255, 255, 255], 0.74)
 // 글자 — 틴트 배경 위에서 대비가 나오도록 먹색 쪽으로 35% 당겨 진하게.
 const headText = (hex: string) => mix(hex, [36, 27, 22], 0.35)
 
-function PanelHead({ title, emoji, accent = LIST_ACCENT }: { title: string; emoji?: string; accent?: string }) {
+function PanelHead({
+  title,
+  emoji,
+  accent = LIST_ACCENT,
+  right,
+}: {
+  title: string
+  emoji?: string
+  accent?: string
+  right?: ReactNode
+}) {
   return (
     <div
       className="shrink-0 flex items-center gap-2 px-4 h-12 border-b-2"
@@ -182,8 +235,23 @@ function PanelHead({ title, emoji, accent = LIST_ACCENT }: { title: string; emoj
     >
       <span className="w-1.5 h-5 rounded-full shrink-0" style={{ background: accent }} />
       {emoji && <span className="text-lg">{emoji}</span>}
-      <span className="font-bold text-[15px]" style={{ color: headText(accent) }}>{title}</span>
+      <span className="font-bold text-[15px] truncate" style={{ color: headText(accent) }}>{title}</span>
+      {right && <span className="ml-auto shrink-0">{right}</span>}
     </div>
+  )
+}
+
+/** 칸 안의 그룹을 한 번에 접고 펴는 버튼 */
+function FoldAllBtn({ folded, accent, onClick }: { folded: boolean; accent: string; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      title={folded ? '전부 펴기' : '전부 접기'}
+      className="px-2.5 py-1 rounded-lg text-[12px] font-bold border bg-white/70 hover:bg-white transition-colors"
+      style={{ color: headText(accent), borderColor: accent }}
+    >
+      {folded ? '▸ 전부 펴기' : '▾ 전부 접기'}
+    </button>
   )
 }
 
@@ -218,6 +286,8 @@ function Section({
   accent,
   links,
   query = '',
+  folded,
+  onFold,
   onAdd,
   onDel,
 }: {
@@ -226,6 +296,8 @@ function Section({
   accent: string
   links: DashLink[]
   query?: string
+  folded: boolean
+  onFold: () => void
   onAdd: (name: string, url: string) => void
   onDel: (idx: number) => void
 }) {
@@ -246,11 +318,16 @@ function Section({
 
   return (
     <section className="rounded-xl bg-white/90 border border-ink-200/80 shadow-soft overflow-hidden">
-      <div
-        className="flex items-center gap-2 px-4 py-2.5 border-b-2"
+      <button
+        onClick={onFold}
+        title={folded ? '펴기' : '접기'}
+        className="w-full flex items-center gap-2 px-4 py-2.5 border-b-2 text-left"
         style={{ background: headTint(accent), borderBottomColor: accent }}
       >
         <span className="w-1.5 h-4 rounded-full shrink-0" style={{ background: accent }} />
+        <span className="text-[11px] w-3 shrink-0" style={{ color: headText(accent) }} aria-hidden>
+          {folded ? '▸' : '▾'}
+        </span>
         <span className="font-bold text-sm" style={{ color: headText(accent) }}>{label}</span>
         {/* 개수 — 회색 숫자라 잘 안 보여서 같은 색 알약 배지로 */}
         <span
@@ -259,8 +336,10 @@ function Section({
         >
           {links.length}
         </span>
-      </div>
+      </button>
 
+      {!folded && (
+        <>
       <div className="px-3 py-3 space-y-2 border-b border-ink-100 bg-ink-100/30">
         <input
           value={name}
@@ -315,6 +394,8 @@ function Section({
           </ul>
         )
       })()}
+        </>
+      )}
     </section>
   )
 }
