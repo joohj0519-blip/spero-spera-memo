@@ -110,13 +110,16 @@ export default function Dashboard() {
     if (gone) await removeDashFile(gone)
   }
 
-  /** 고른 파일들을 드라이브에 올려 목록에 붙인다. */
-  async function addFiles(areaId: string, gi: number, files: File[]) {
+  /** 고른 파일들을 드라이브에 올려 목록에 붙인다.
+   *  label — 이름 칸에 적어 둔 이름. 파일 한 개일 때만 그 이름을 쓴다
+   *  (여러 개면 어느 것에 붙일지 알 수 없으므로 각자 파일 이름을 쓴다). */
+  async function addFiles(areaId: string, gi: number, files: File[], label = '') {
+    const one = files.length === 1 ? label.trim() : ''
     const added = []
     for (const f of files) {
       try {
         // 올리는 칸에 따라 이름 앞에 '[서식] ' · '[자료] ' 가 붙는다
-        added.push(await uploadDashFile(f, GROUP_TAGS[gi] ?? ''))
+        added.push(await uploadDashFile(f, GROUP_TAGS[gi] ?? '', one))
       } catch (e) {
         alert(e instanceof Error ? e.message : '파일을 올리지 못했습니다.')
         // 로그인이 풀린 게 원인일 수 있으니 단추를 바로 로그인 모양으로 바꿔 준다
@@ -205,7 +208,7 @@ export default function Dashboard() {
               onAdd={(name, url) => void addLink(a.id, gi, name, url)}
               onDel={(idx) => void delLink(a.id, gi, idx)}
               // 첨부파일은 '서식'·'자료·메모' 칸에만 (링크 칸은 주소만 모으는 곳)
-              onAddFiles={gi === 0 ? undefined : (fs) => addFiles(a.id, gi, fs)}
+              onAddFiles={gi === 0 ? undefined : (fs, label) => addFiles(a.id, gi, fs, label)}
               signedIn={signedIn}
               onSignIn={doSignIn}
             />
@@ -364,7 +367,7 @@ function Section({
   onAdd: (name: string, url: string) => void
   onDel: (idx: number) => void
   /** 있으면 이 칸에 첨부파일 올리기 버튼이 생긴다 */
-  onAddFiles?: (files: File[]) => Promise<void>
+  onAddFiles?: (files: File[], label: string) => Promise<void>
   signedIn?: boolean
   onSignIn?: () => Promise<void>
 }) {
@@ -377,7 +380,11 @@ function Section({
     if (!list || list.length === 0 || !onAddFiles) return
     setBusy(true)
     try {
-      await onAddFiles(Array.from(list))
+      // 이름 칸에 적어 둔 이름을 그대로 첨부파일 이름으로 쓴다.
+      // (이러지 않으면 이름을 살리려고 '저장'까지 눌러 줄이 두 개가 된다)
+      await onAddFiles(Array.from(list), name)
+      setName('')
+      setUrl('')
     } finally {
       setBusy(false)
     }
@@ -470,6 +477,12 @@ function Section({
                 e.target.value = ''
               }}
             />
+            {signedIn && (
+              <p className="text-[11px] text-ink-400 leading-snug px-0.5">
+                위 이름 칸을 적고 파일을 고르면 <b className="font-semibold">그 이름</b>으로 저장됩니다.
+                비워 두면 파일 이름 그대로. (여러 개를 한 번에 고르면 각자 파일 이름)
+              </p>
+            )}
           </>
         )}
       </div>

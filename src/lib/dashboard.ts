@@ -106,15 +106,18 @@ export const MAX_FILE_BYTES = 20 * 1024 * 1024
 const VIEWABLE = /^image\/|^application\/pdf$|^text\/plain$/
 
 /** 파일을 드라이브에 올리고 목록에 넣을 항목을 만들어 준다.
- *  tag 를 주면 목록에 보일 이름 앞에 '[서식] ' 처럼 머릿글이 붙는다. */
-export async function uploadDashFile(file: File, tag = ''): Promise<DashLink> {
+ *  tag 를 주면 목록에 보일 이름 앞에 '[서식] ' 처럼 머릿글이 붙고,
+ *  label 을 주면 파일 이름 대신 그 이름으로 목록에 올린다
+ *  (내려받을 때는 fileName 에 담긴 원래 파일 이름을 쓰므로 영향 없다). */
+export async function uploadDashFile(file: File, tag = '', label = ''): Promise<DashLink> {
   if (file.size > MAX_FILE_BYTES) {
     throw new Error(`${file.name} 은(는) 20MB 를 넘습니다.`)
   }
   const { uploadAppFile } = await import('./drive')
   const fileId = await uploadAppFile(file)
+  const base = label.trim() || file.name
   return {
-    name: tag ? `[${tag}] ${file.name}` : file.name,
+    name: tag ? `[${tag}] ${base}` : base,
     url: '',
     type: 'file',
     fileId,
