@@ -5,7 +5,9 @@ import { BottomNav } from './BottomNav'
 import { ReminderBanner } from './ReminderBanner'
 import { useStandalone } from '../hooks/usePwa'
 
-const FRAME_W = 500
+// [2026-08-20] 앱 고정 폭 500 -> 485px (15px 축소). 데스크톱 플로팅 창과
+// 모바일/설치형 최대 폭 두 군데를 같은 값으로 맞춰야 하므로 아래 max-w 도 함께 변경
+const FRAME_W = 485
 const FRAME_H = 930
 const TOP_OFFSET = 16
 
@@ -82,7 +84,7 @@ export function FloatingFrame({ children }: { children: ReactNode }) {
   //          100vh 는 실제 보이는 높이보다 커져서 네비 아랫부분이 잘리기 때문
   if (!isDesktop || isStandalone) {
     return (
-      <div className="h-dvh flex flex-col max-w-[500px] mx-auto w-full">
+      <div className="h-dvh flex flex-col max-w-[485px] mx-auto w-full">
         <ReminderBanner />
         {/* min-h-0 필수: flex 자식의 기본값 min-height:auto 때문에 스크롤이 안 잡히는 문제 방지 */}
         <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain flex flex-col">
