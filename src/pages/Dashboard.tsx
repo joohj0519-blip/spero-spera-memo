@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { onMemosChanged } from '../lib/sync'
+import { ensureInit, isSignedIn, signIn } from '../lib/drive'
 import {
   AREAS,
   GROUP_LABELS,
@@ -42,6 +43,7 @@ export default function Dashboard() {
   const [detailQuery, setDetailQuery] = useState('')
   const [commonQuery, setCommonQuery] = useState('')
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>(loadCollapsed)
+  const [signedIn, setSignedIn] = useState(false)
 
   // 접은 상태가 새로고침 후에도 유지되도록 저장
   useEffect(() => {
@@ -61,6 +63,27 @@ export default function Dashboard() {
     reload()
     return onMemosChanged(reload)
   }, [])
+
+  /* 첨부파일은 드라이브에서 받아와야 하므로 구글 로그인이 살아 있어야 한다.
+     토큰은 1시간이면 만료되는데, 만료 뒤 몰래 갱신하는 방식은 브라우저가
+     작은 창을 막아 실패한다 → 로그인 상태를 계속 지켜보고, 풀렸으면
+     사용자가 직접 누를 로그인 버튼을 내어 준다. */
+  useEffect(() => {
+    let alive = true
+    const check = () => { if (alive) setSignedIn(isSignedIn()) }
+    void ensureInit().then(check).catch(() => { /* 라이브러리 로딩 실패는 아래 버튼으로 알게 된다 */ })
+    const timer = setInterval(check, 20_000)
+    return () => { alive = false; clearInterval(timer) }
+  }, [])
+
+  async function doSignIn() {
+    try {
+      await signIn()
+    } catch (e) {
+      alert(e instanceof Error ? e.message : '로그인에 실패했습니다.')
+    }
+    setSignedIn(isSignedIn())
+  }
 
   const areaData = (id: string): AreaData => data[id] ?? emptyArea()
 
@@ -96,6 +119,8 @@ export default function Dashboard() {
         added.push(await uploadDashFile(f, GROUP_TAGS[gi] ?? ''))
       } catch (e) {
         alert(e instanceof Error ? e.message : '파일을 올리지 못했습니다.')
+        // 로그인이 풀린 게 원인일 수 있으니 단추를 바로 로그인 모양으로 바꿔 준다
+        setSignedIn(isSignedIn())
       }
     }
     if (added.length === 0) return
@@ -181,6 +206,8 @@ export default function Dashboard() {
               onDel={(idx) => void delLink(a.id, gi, idx)}
               // 첨부파일은 '서식'·'자료·메모' 칸에만 (링크 칸은 주소만 모으는 곳)
               onAddFiles={gi === 0 ? undefined : (fs) => addFiles(a.id, gi, fs)}
+              signedIn={signedIn}
+              onSignIn={doSignIn}
             />
           ))}
         </div>
@@ -324,6 +351,8 @@ function Section({
   onAdd,
   onDel,
   onAddFiles,
+  signedIn,
+  onSignIn,
 }: {
   label: string
   gi: number
@@ -336,6 +365,8 @@ function Section({
   onDel: (idx: number) => void
   /** 있으면 이 칸에 첨부파일 올리기 버튼이 생긴다 */
   onAddFiles?: (files: File[]) => Promise<void>
+  signedIn?: boolean
+  onSignIn?: () => Promise<void>
 }) {
   const [name, setName] = useState('')
   const [url, setUrl] = useState('')
@@ -416,12 +447,18 @@ function Section({
         {onAddFiles && (
           <>
             <button
-              onClick={() => fileRef.current?.click()}
+              // 로그인이 풀렸으면 파일 고르기 대신 로그인부터. 누른 그 순간에
+              // 로그인 창을 띄워야 브라우저가 창을 막지 않는다.
+              onClick={() => (signedIn ? fileRef.current?.click() : void onSignIn?.())}
               disabled={busy}
               className="w-full rounded-lg border border-dashed py-2 text-[13px] font-semibold bg-white/70 hover:bg-white disabled:opacity-60 transition-colors"
               style={{ color: headText(accent), borderColor: accent }}
             >
-              {busy ? '올리는 중…' : '📎 파일 첨부 (개당 20MB)'}
+              {busy
+                ? '올리는 중…'
+                : signedIn
+                  ? '📎 파일 첨부 (개당 20MB)'
+                  : '🔐 구글 로그인하고 첨부하기'}
             </button>
             <input
               ref={fileRef}

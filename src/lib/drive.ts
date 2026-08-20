@@ -431,6 +431,30 @@ export function getLastError(): { at: number; msg: string } | null {
 const UPLOAD_URL = 'https://www.googleapis.com/upload/drive/v3/files'
 const FILES_URL = 'https://www.googleapis.com/drive/v3/files'
 
+const SIGNIN_MSG =
+  '구글 로그인이 풀렸습니다.\n\n첨부 칸의 "🔐 구글 로그인하고 첨부하기" 단추를 눌러 로그인한 뒤 다시 해 주세요.'
+
+/** 저장된 토큰을 버린다. 구글에 반납(revoke)까지 하는 signOut 과 달리 화면 상태만 되돌린다. */
+function forgetToken() {
+  accessToken = null
+  tokenExpiry = 0
+  localStorage.removeItem(TOKEN_KEY)
+  try {
+    window.gapi?.client?.setToken(null)
+  } catch {
+    /* 아직 로딩 전이면 무시 */
+  }
+}
+
+/** 토큰이 남아 있어도 구글이 거부(401/403)하면 로그인부터 다시 해야 한다. */
+function requestFailed(res: Response, what: string): Error {
+  if (res.status === 401 || res.status === 403) {
+    forgetToken()
+    return new Error(SIGNIN_MSG)
+  }
+  return new Error(`${what} (${res.status})`)
+}
+
 async function authHeader(): Promise<Record<string, string>> {
   await ensureInit()
   if (!isSignedIn()) {
@@ -438,10 +462,11 @@ async function authHeader(): Promise<Record<string, string>> {
     // (안 끊으면 '올리는 중…' 상태로 멈춰 버린다)
     const ok = await Promise.race([
       trySilentRefresh(),
-      new Promise<boolean>((r) => setTimeout(() => r(false), 8000)),
+      new Promise<boolean>((r) => setTimeout(() => r(false), 5000)),
     ])
     if (!ok) {
-      throw new Error('구글 로그인이 풀렸습니다. 설정 화면에서 다시 로그인한 뒤 해 주세요.')
+      forgetToken()
+      throw new Error(SIGNIN_MSG)
     }
   }
   return { Authorization: `Bearer ${accessToken}` }
@@ -464,7 +489,7 @@ export async function uploadAppFile(file: File): Promise<string> {
     headers,
     body: form,
   })
-  if (!res.ok) throw new Error(`올리기 실패 (${res.status})`)
+  if (!res.ok) throw requestFailed(res, '올리기 실패')
   const data = (await res.json()) as { id?: string }
   if (!data.id) throw new Error('올리기 실패 (파일 id 없음)')
   return data.id
@@ -475,7 +500,8 @@ export async function downloadAppFile(fileId: string): Promise<Blob> {
   const headers = await authHeader()
   const res = await fetch(`${FILES_URL}/${encodeURIComponent(fileId)}?alt=media`, { headers })
   if (!res.ok) {
-    throw new Error(res.status === 404 ? '드라이브에서 파일을 찾을 수 없습니다.' : `내려받기 실패 (${res.status})`)
+    if (res.status === 404) throw new Error('드라이브에서 파일을 찾을 수 없습니다. (지워졌거나 다른 계정입니다)')
+    throw requestFailed(res, '내려받기 실패')
   }
   return res.blob()
 }
