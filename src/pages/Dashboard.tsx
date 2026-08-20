@@ -1,13 +1,17 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { onMemosChanged } from '../lib/sync'
 import {
   AREAS,
   GROUP_LABELS,
+  GROUP_TAGS,
   emptyArea,
   getDashboard,
   saveDashboard,
   classify,
+  uploadDashFile,
+  openDashFile,
+  removeDashFile,
 } from '../lib/dashboard'
 import type { AreaData, DashData, DashLink } from '../lib/dashboard'
 
@@ -74,8 +78,32 @@ export default function Dashboard() {
 
   async function delLink(areaId: string, gi: number, idx: number) {
     const cur = areaData(areaId).map((g) => g.slice()) as AreaData
+    const gone = cur[gi][idx]
     cur[gi] = cur[gi].filter((_, i) => i !== idx)
     const next = { ...data, [areaId]: cur }
+    setData(next)
+    await saveDashboard(next)
+    // 첨부파일이면 드라이브에 올려 둔 실제 파일도 같이 정리
+    if (gone) await removeDashFile(gone)
+  }
+
+  /** 고른 파일들을 드라이브에 올려 목록에 붙인다. */
+  async function addFiles(areaId: string, gi: number, files: File[]) {
+    const added = []
+    for (const f of files) {
+      try {
+        // 올리는 칸에 따라 이름 앞에 '[서식] ' · '[자료] ' 가 붙는다
+        added.push(await uploadDashFile(f, GROUP_TAGS[gi] ?? ''))
+      } catch (e) {
+        alert(e instanceof Error ? e.message : '파일을 올리지 못했습니다.')
+      }
+    }
+    if (added.length === 0) return
+    // 올리는 데 시간이 걸려 그 사이 다른 곳이 바뀌었을 수 있으니 저장본을 다시 읽어 합친다
+    const fresh = await getDashboard()
+    const cur = (fresh[areaId] ?? emptyArea()).map((g) => g.slice()) as AreaData
+    cur[gi] = [...cur[gi], ...added]
+    const next = { ...fresh, [areaId]: cur }
     setData(next)
     await saveDashboard(next)
   }
@@ -92,7 +120,9 @@ export default function Dashboard() {
     // 메모 화면의 '메모/체크리스트/할 일' 버튼 글자가 줄바꿈된다.
     // 메모 칸은 앱 본체 폭(485px)이 들어갈 만큼 넉넉히 잡고(380~520px),
     // 나머지 네 칸이 남은 폭을 비율로 나눠 갖게 한다.
-    <div className="h-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)_minmax(0,1fr)_minmax(0,1.15fr)_minmax(380px,520px)] divide-y lg:divide-y-0 lg:divide-x divide-ink-200/70">
+    // ① 업무 목록은 이름만 있으면 되니 0.75fr 로 좁게,
+    // ②선택업무·③공통업무·④캘린더 는 1fr 씩으로 서로 폭을 같게 맞춘다.
+    <div className="h-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[minmax(0,0.75fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(380px,520px)] divide-y lg:divide-y-0 lg:divide-x divide-ink-200/70">
       {/* ① 업무 목록 */}
       <aside className="flex flex-col min-h-0 min-w-0">
         <PanelHead title="업무" accent={LIST_ACCENT} />
@@ -107,13 +137,14 @@ export default function Dashboard() {
                 <button
                   onClick={() => setSel(i)}
                   className={[
-                    'w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-left text-sm transition-colors',
+                    // 칸이 좁아진 만큼 줄도 같이 줄인다 (아이콘·여백·글자)
+                    'w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-left text-[13px] leading-tight transition-colors',
                     on ? 'bg-white shadow-soft font-semibold text-ink-900' : 'text-ink-600 hover:bg-white/60',
                   ].join(' ')}
                   style={on ? { boxShadow: `inset 3px 0 0 ${area.accent}` } : undefined}
                 >
                   <span
-                    className="shrink-0 w-8 h-8 rounded-lg grid place-items-center text-base"
+                    className="shrink-0 w-7 h-7 rounded-lg grid place-items-center text-[15px]"
                     style={{ background: area.soft }}
                   >
                     {area.emoji}
@@ -144,10 +175,12 @@ export default function Dashboard() {
               accent={a.accent}
               links={groups[gi]}
               query={detailQuery}
-              folded={!!collapsed[`:`]}
-              onFold={() => toggle(`:`)}
+              folded={!!collapsed[`${a.id}:${gi}`]}
+              onFold={() => toggle(`${a.id}:${gi}`)}
               onAdd={(name, url) => void addLink(a.id, gi, name, url)}
               onDel={(idx) => void delLink(a.id, gi, idx)}
+              // 첨부파일은 '서식'·'자료·메모' 칸에만 (링크 칸은 주소만 모으는 곳)
+              onAddFiles={gi === 0 ? undefined : (fs) => addFiles(a.id, gi, fs)}
             />
           ))}
         </div>
@@ -290,6 +323,7 @@ function Section({
   onFold,
   onAdd,
   onDel,
+  onAddFiles,
 }: {
   label: string
   gi: number
@@ -300,9 +334,23 @@ function Section({
   onFold: () => void
   onAdd: (name: string, url: string) => void
   onDel: (idx: number) => void
+  /** 있으면 이 칸에 첨부파일 올리기 버튼이 생긴다 */
+  onAddFiles?: (files: File[]) => Promise<void>
 }) {
   const [name, setName] = useState('')
   const [url, setUrl] = useState('')
+  const [busy, setBusy] = useState(false)
+  const fileRef = useRef<HTMLInputElement>(null)
+
+  const pickFiles = async (list: FileList | null) => {
+    if (!list || list.length === 0 || !onAddFiles) return
+    setBusy(true)
+    try {
+      await onAddFiles(Array.from(list))
+    } finally {
+      setBusy(false)
+    }
+  }
 
   const submit = () => {
     onAdd(name, url)
@@ -365,6 +413,28 @@ function Section({
             저장
           </button>
         </div>
+        {onAddFiles && (
+          <>
+            <button
+              onClick={() => fileRef.current?.click()}
+              disabled={busy}
+              className="w-full rounded-lg border border-dashed py-2 text-[13px] font-semibold bg-white/70 hover:bg-white disabled:opacity-60 transition-colors"
+              style={{ color: headText(accent), borderColor: accent }}
+            >
+              {busy ? '올리는 중…' : '📎 파일 첨부 (개당 20MB)'}
+            </button>
+            <input
+              ref={fileRef}
+              type="file"
+              multiple
+              hidden
+              onChange={(e) => {
+                void pickFiles(e.target.files)
+                e.target.value = ''
+              }}
+            />
+          </>
+        )}
       </div>
 
       {(() => {
@@ -401,18 +471,71 @@ function Section({
   )
 }
 
+function formatBytes(n: number): string {
+  if (n < 1024) return `${n}B`
+  if (n < 1024 * 1024) return `${Math.round(n / 1024)}KB`
+  return `${(n / 1024 / 1024).toFixed(1)}MB`
+}
+
 function Row({ link }: { link: DashLink }) {
-  const icon = link.type === 'folder' ? '📁' : link.type === 'memo' ? '📝' : '🔗'
+  const [busy, setBusy] = useState(false)
+  // 메모는 기본적으로 한 줄(제목)만. 눌러야 전체가 펼쳐진다.
+  const [open, setOpen] = useState(false)
+  const icon =
+    link.type === 'file' ? '📎' : link.type === 'folder' ? '📁' : link.type === 'memo' ? '📝' : '🔗'
+  // 첨부파일도 url 이 비어 있으므로 'file' 은 먼저 빼 줘야 메모로 오인하지 않는다
+  const isMemo = link.type !== 'file' && (link.type === 'memo' || !link.url)
   const inner = (
     <>
       <span className="text-[15px] shrink-0">{icon}</span>
-      <span className="flex-1 min-w-0 break-all text-sm text-ink-900">{link.name}</span>
+      <span
+        className={`flex-1 min-w-0 text-sm text-ink-900 ${isMemo && !open ? 'truncate' : 'break-all'}`}
+      >
+        {link.name}
+      </span>
+      {link.type === 'file' && (
+        <span className="shrink-0 text-[11px] text-ink-400 tabular-nums">
+          {busy ? '여는 중…' : formatBytes(link.size ?? 0)}
+        </span>
+      )}
     </>
   )
   const cls = 'flex-1 flex items-center gap-2.5 px-4 py-3 min-w-0 hover:bg-ink-100/40 transition-colors'
 
-  if (link.type === 'memo' || !link.url) {
-    return <div className={cls}>{inner}</div>
+  // 첨부파일 — 눌렀을 때 드라이브에서 원본을 받아 열어 준다
+  if (link.type === 'file') {
+    return (
+      <button
+        className={`${cls} text-left disabled:opacity-60`}
+        disabled={busy}
+        title={`${link.name} — 눌러서 열기`}
+        onClick={async () => {
+          setBusy(true)
+          try {
+            await openDashFile(link)
+          } catch (e) {
+            alert(e instanceof Error ? e.message : '파일을 열지 못했습니다.')
+          } finally {
+            setBusy(false)
+          }
+        }}
+      >
+        {inner}
+      </button>
+    )
+  }
+
+  // 메모 — 한 줄로 줄여 두고, 누르면 전체가 펼쳐진다 (마우스를 올려도 전체가 보인다)
+  if (isMemo) {
+    return (
+      <button
+        className={`${cls} text-left`}
+        title={link.name}
+        onClick={() => setOpen((o) => !o)}
+      >
+        {inner}
+      </button>
+    )
   }
   return (
     <a

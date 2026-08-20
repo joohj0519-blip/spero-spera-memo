@@ -419,3 +419,69 @@ export function getLastError(): { at: number; msg: string } | null {
     return null
   }
 }
+
+/* ── 대시보드 첨부파일 ──────────────────────────────────────
+   메모·대시보드 자료는 spero-spera.json 파일 하나에 통째로 담긴다.
+   첨부파일까지 거기 넣으면 링크 한 줄만 고쳐도 파일 전체(수십 MB)를
+   다시 올리게 되므로, 첨부파일은 앱 전용 공간(appDataFolder)에
+   '파일 하나당 하나'로 따로 올리고 목록에는 그 파일 id 만 적어 둔다.
+   gapi.client.request 는 본문을 문자열로 다루어 이진 파일이 깨지므로
+   여기서는 fetch 를 직접 쓴다. */
+
+const UPLOAD_URL = 'https://www.googleapis.com/upload/drive/v3/files'
+const FILES_URL = 'https://www.googleapis.com/drive/v3/files'
+
+async function authHeader(): Promise<Record<string, string>> {
+  await ensureInit()
+  if (!isSignedIn()) {
+    // 로그인 창이 막히면 조용한 갱신이 영영 안 끝나기도 한다 → 8초로 끊는다
+    // (안 끊으면 '올리는 중…' 상태로 멈춰 버린다)
+    const ok = await Promise.race([
+      trySilentRefresh(),
+      new Promise<boolean>((r) => setTimeout(() => r(false), 8000)),
+    ])
+    if (!ok) {
+      throw new Error('구글 로그인이 풀렸습니다. 설정 화면에서 다시 로그인한 뒤 해 주세요.')
+    }
+  }
+  return { Authorization: `Bearer ${accessToken}` }
+}
+
+/** 파일 하나를 앱 전용 공간에 올리고 파일 id 를 돌려준다. */
+export async function uploadAppFile(file: File): Promise<string> {
+  const headers = await authHeader()
+  const form = new FormData()
+  form.append(
+    'metadata',
+    new Blob([JSON.stringify({ name: file.name, parents: ['appDataFolder'] })], {
+      type: 'application/json',
+    }),
+  )
+  form.append('file', file)
+  // FormData 를 쓰면 fetch 가 boundary 를 붙인 Content-Type 을 알아서 넣는다 (직접 넣으면 깨짐)
+  const res = await fetch(`${UPLOAD_URL}?uploadType=multipart&fields=id`, {
+    method: 'POST',
+    headers,
+    body: form,
+  })
+  if (!res.ok) throw new Error(`올리기 실패 (${res.status})`)
+  const data = (await res.json()) as { id?: string }
+  if (!data.id) throw new Error('올리기 실패 (파일 id 없음)')
+  return data.id
+}
+
+/** 올려 둔 첨부파일을 원본 그대로 받아온다. */
+export async function downloadAppFile(fileId: string): Promise<Blob> {
+  const headers = await authHeader()
+  const res = await fetch(`${FILES_URL}/${encodeURIComponent(fileId)}?alt=media`, { headers })
+  if (!res.ok) {
+    throw new Error(res.status === 404 ? '드라이브에서 파일을 찾을 수 없습니다.' : `내려받기 실패 (${res.status})`)
+  }
+  return res.blob()
+}
+
+/** 목록에서 지울 때 드라이브에 남은 실제 파일도 함께 지운다. */
+export async function deleteAppFile(fileId: string): Promise<void> {
+  const headers = await authHeader()
+  await fetch(`${FILES_URL}/${encodeURIComponent(fileId)}`, { method: 'DELETE', headers })
+}
