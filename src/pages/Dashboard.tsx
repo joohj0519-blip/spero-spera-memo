@@ -59,7 +59,11 @@ export default function Dashboard() {
   const groups = areaData(a.id)
 
   return (
-    <div className="h-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 divide-y lg:divide-y-0 lg:divide-x divide-ink-200/70">
+    // 다섯 칸을 똑같이 1/5 씩 나누면(grid-cols-5) 맨 오른쪽 메모 칸이 좁아서
+    // 메모 화면의 '메모/체크리스트/할 일' 버튼 글자가 줄바꿈된다.
+    // 메모 칸은 앱 본체 폭(485px)이 들어갈 만큼 넉넉히 잡고(380~520px),
+    // 나머지 네 칸이 남은 폭을 비율로 나눠 갖게 한다.
+    <div className="h-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)_minmax(0,1fr)_minmax(0,1.15fr)_minmax(380px,520px)] divide-y lg:divide-y-0 lg:divide-x divide-ink-200/70">
       {/* ① 업무 목록 */}
       <aside className="flex flex-col min-h-0 min-w-0">
         <PanelHead title="업무" accent={LIST_ACCENT} />
