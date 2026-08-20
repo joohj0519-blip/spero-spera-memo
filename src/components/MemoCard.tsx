@@ -67,14 +67,14 @@ export function MemoCard({ memo, variant = 'card' }: { memo: Memo; variant?: Mem
       <Link
         to={`/memo/${memo.id}`}
         className={[
-          'group flex items-center gap-2.5 rounded-lg border border-ink-200/80 shadow-soft hover:shadow-card transition-shadow pl-1.5 pr-3 py-2 overflow-hidden',
+          'group flex items-center gap-1.5 rounded-lg border border-ink-200/80 shadow-soft hover:shadow-card transition-shadow pl-1.5 pr-2.5 py-1 overflow-hidden',
           c.card,
         ].join(' ')}
       >
-        <span className={['w-1 h-7 rounded-full shrink-0', c.bar].join(' ')} aria-hidden />
+        <span className={['w-1 h-4 rounded-full shrink-0', c.bar].join(' ')} aria-hidden />
         <div
           className={[
-            'shrink-0 grid place-items-center w-7 h-7 rounded-md text-sm ring-1',
+            'shrink-0 grid place-items-center w-5 h-5 rounded ring-1 text-[10px] leading-none',
             c.iconBg,
             c.iconRing,
           ].join(' ')}
@@ -83,7 +83,7 @@ export function MemoCard({ memo, variant = 'card' }: { memo: Memo; variant?: Mem
         </div>
         <div className="flex-1 min-w-0 inline-flex items-center gap-1.5">
           {memo.pinned && <span className="text-gold-500 text-[10px] shrink-0">📌</span>}
-          <span className="text-sm font-medium text-ink-900 truncate">
+          <span className="text-[13px] leading-5 font-medium text-ink-900 truncate">
             {memo.title || '제목 없음'}
           </span>
           {memo.type === 'todo' && memo.done && (
