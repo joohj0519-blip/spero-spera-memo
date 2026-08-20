@@ -13,6 +13,12 @@ import type { AreaData, DashData, DashLink } from '../lib/dashboard'
 const BASE = import.meta.env.BASE_URL
 const COMMON_ID = '__common__'   // 특정 업무에 속하지 않는 공통 링크
 const COMMON_ACCENT = '#b5883c'  // 허니 앰버(포인트)
+// 헤드가 흰색 반투명이라 구분이 안 된다는 의견 반영 —
+// 색이 없던 세 칸(업무 목록·캘린더·메모)도 각자 색을 갖게 함.
+// 캘린더 = 로즈(check 계열), 메모 = 올리브(note 계열) 로 앱의 기존 색 의미와 맞췄다.
+const LIST_ACCENT = '#4A3A30'   // 업무 목록 — 진한 에스프레소(ink-700)
+const CAL_ACCENT  = '#9B756E'   // 캘린더 — Rose Bare
+const MEMO_ACCENT = '#7B745B'   // 메모 — Sagebound
 
 export default function Dashboard() {
   const [data, setData] = useState<DashData>({})
@@ -56,7 +62,7 @@ export default function Dashboard() {
     <div className="h-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 divide-y lg:divide-y-0 lg:divide-x divide-ink-200/70">
       {/* ① 업무 목록 */}
       <aside className="flex flex-col min-h-0 min-w-0">
-        <PanelHead title="업무" />
+        <PanelHead title="업무" accent={LIST_ACCENT} />
         <SearchBar value={areaQuery} onChange={setAreaQuery} placeholder="업무 검색" />
         <ul className="flex-1 overflow-y-auto p-2 space-y-1">
           {AREAS.map((area, i) => ({ area, i }))
@@ -126,7 +132,7 @@ export default function Dashboard() {
 
       {/* ④ 캘린더 */}
       <section className="flex flex-col min-h-0 min-w-0">
-        <PanelHead title="캘린더" />
+        <PanelHead title="캘린더" emoji="📅" accent={CAL_ACCENT} />
         <iframe
           title="캘린더"
           src={`${BASE}calendar?embed=1`}
@@ -136,7 +142,7 @@ export default function Dashboard() {
 
       {/* ⑤ 메모 */}
       <section className="flex flex-col min-h-0 min-w-0">
-        <PanelHead title="메모" />
+        <PanelHead title="메모" emoji="📝" accent={MEMO_ACCENT} />
         <iframe
           title="메모"
           src={BASE}
@@ -147,12 +153,33 @@ export default function Dashboard() {
   )
 }
 
-function PanelHead({ title, emoji, accent }: { title: string; emoji?: string; accent?: string }) {
+/* ── 헤드 색 계산 ───────────────────────────────────────────
+   업무마다 accent 색(진한 원색)이 하나씩 정해져 있는데, 이 색을
+   글자·배경에 그대로 쓰면 배경은 너무 진하고 글자는 너무 옅다.
+   그래서 흰색/먹색과 섞어 (1) 옅은 배경 틴트 (2) 진한 글자색 두 가지를 만든다.
+   Tailwind 클래스로는 런타임 색을 못 만들기 때문에 계산식으로 처리. */
+function mix(hex: string, t: [number, number, number], ratio: number) {
+  const h = hex.replace('#', '')
+  const p = [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16))
+  const v = p.map((c, i) => Math.round(c + (t[i] - c) * ratio))
+  return `rgb(${v[0]}, ${v[1]}, ${v[2]})`
+}
+const headTint = (hex: string) => mix(hex, [255, 255, 255], 0.74)  // 옅은 배경 틴트 — 안쪽 그룹 헤드용
+const headText = (hex: string) => mix(hex, [36, 27, 22], 0.35)     // 글자 — 대비 확보용으로 진하게
+// 칸 제목줄은 아예 색을 꽉 채워 한눈에 구분되게 한다.
+// 원색 그대로 깔면 흰 글씨 대비가 부족해서(예: 허니 앰버 2.9:1),
+// 먹색 쪽으로 30% 당겨 어둡게 만든 뒤 흰 글씨를 올린다(대비 4.5:1 이상).
+const headSolid = (hex: string) => mix(hex, [36, 27, 22], 0.3)
+
+function PanelHead({ title, emoji, accent = LIST_ACCENT }: { title: string; emoji?: string; accent?: string }) {
   return (
-    <div className="shrink-0 flex items-center gap-2 px-4 h-12 border-b border-ink-200/70 bg-white/40 backdrop-blur-sm">
-      {accent && <span className="w-1.5 h-4 rounded-full" style={{ background: accent }} />}
+    <div
+      className="shrink-0 flex items-center gap-2 px-4 h-12"
+      style={{ background: headSolid(accent) }}
+    >
+      <span className="w-1.5 h-5 rounded-full shrink-0 bg-white/50" />
       {emoji && <span className="text-lg">{emoji}</span>}
-      <span className="font-semibold text-ink-900 text-[15px]">{title}</span>
+      <span className="font-bold text-[15px] text-white">{title}</span>
     </div>
   )
 }
@@ -216,10 +243,19 @@ function Section({
 
   return (
     <section className="rounded-xl bg-white/90 border border-ink-200/80 shadow-soft overflow-hidden">
-      <div className="flex items-center gap-2 px-4 py-3 border-b border-ink-100">
-        <span className="w-2 h-2 rounded-full" style={{ background: accent }} />
-        <span className="font-semibold text-ink-900 text-sm">{label}</span>
-        <span className="ml-auto text-xs font-semibold text-ink-400">{links.length}</span>
+      <div
+        className="flex items-center gap-2 px-4 py-2.5 border-b-2"
+        style={{ background: headTint(accent), borderBottomColor: accent }}
+      >
+        <span className="w-1.5 h-4 rounded-full shrink-0" style={{ background: accent }} />
+        <span className="font-bold text-sm" style={{ color: headText(accent) }}>{label}</span>
+        {/* 개수 — 회색 숫자라 잘 안 보여서 같은 색 알약 배지로 */}
+        <span
+          className="ml-auto text-[11px] font-bold text-white px-2 py-0.5 rounded-full tabular-nums"
+          style={{ background: accent }}
+        >
+          {links.length}
+        </span>
       </div>
 
       <div className="px-3 py-3 space-y-2 border-b border-ink-100 bg-ink-100/30">
