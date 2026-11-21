@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { listMemos } from '../db'
 import { onMemosChanged } from '../lib/sync'
 import {
+  ackReminder,
   fireSystemNotifications,
   getDueReminders,
   isBannerSnoozedToday,
@@ -69,10 +70,21 @@ export function ReminderBanner() {
             <span className="shrink-0 text-gold-700/80">외 {more}건</span>
           )}
         </Link>
+        {/* 확인 체크 — 지금 보이는 알림을 '확인' 처리. 저장되면 목록이 자동으로 다시 읽혀
+            이 알림은 사라지고, 남은 알림이 있으면 다음 것이 이어서 보인다. */}
+        <button
+          onClick={() => { void ackReminder(first.memo) }}
+          className="shrink-0 px-2 py-1 rounded-md bg-white/80 border border-gold-200 text-gold-900 hover:bg-white text-[11px] font-semibold"
+          aria-label="확인 — 이 알림 다시 보지 않기"
+          title="확인 — 이 알림 다시 보지 않기"
+        >
+          ✓ 확인
+        </button>
         <button
           onClick={() => { snoozeBannerToday(); setSnoozed(true) }}
           className="text-gold-700/70 hover:text-gold-900 text-xs px-1"
           aria-label="오늘 숨기기"
+          title="오늘 하루만 숨기기"
         >
           ✕
         </button>

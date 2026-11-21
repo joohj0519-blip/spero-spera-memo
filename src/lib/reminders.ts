@@ -1,3 +1,4 @@
+import { saveMemo } from '../db'
 import type { Memo } from '../types'
 
 const NOTIFIED_KEY = 'spero:notified'
@@ -20,7 +21,22 @@ function isUncompleted(memo: Memo): boolean {
   return false
 }
 
-/** 오늘 또는 그 이전 dueDate 를 가진 미완료 todo/checklist 만 추림. 과거가 위로. */
+/** 사용자가 이 날짜의 알림을 이미 '확인' 했는지. (날짜를 바꾸면 다시 false 가 됨) */
+function isAcknowledged(memo: Memo): boolean {
+  return !!memo.dueDate && memo.reminderAck === memo.dueDate
+}
+
+/**
+ * 알림 '확인' 처리 — 이 메모의 알림이 다시 나오지 않게 한다.
+ * updatedAt 을 함께 갱신하는 이유: 동기화가 '더 최근에 수정된 쪽'을 채택하는 방식이라,
+ * 갱신하지 않으면 다른 기기에 확인 표시가 전달되지 않기 때문.
+ */
+export async function ackReminder(memo: Memo): Promise<void> {
+  if (!memo.dueDate) return
+  await saveMemo({ ...memo, reminderAck: memo.dueDate, updatedAt: Date.now() })
+}
+
+/** 오늘 또는 그 이전 dueDate 를 가진 미완료 todo/checklist 중, 아직 '확인' 하지 않은 것만 추림. 과거가 위로. */
 export function getDueReminders(memos: Memo[]): ReminderItem[] {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
@@ -29,6 +45,8 @@ export function getDueReminders(memos: Memo[]): ReminderItem[] {
     if (!m.dueDate) continue
     if (m.type !== 'todo' && m.type !== 'checklist') continue
     if (!isUncompleted(m)) continue
+    // 이미 확인 체크한 알림은 배너·시스템 알림 모두에서 제외
+    if (isAcknowledged(m)) continue
     const due = new Date(`${m.dueDate}T00:00:00`)
     if (Number.isNaN(due.getTime())) continue
     const diffDays = Math.floor((today.getTime() - due.getTime()) / (1000 * 60 * 60 * 24))

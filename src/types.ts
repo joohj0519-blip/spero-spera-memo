@@ -28,6 +28,13 @@ export interface Memo {
   updatedAt: number
   /** todo 의 완료 상태 (체크리스트는 items 로 별도 관리) */
   done?: boolean
+  /**
+   * 알림 '확인' 표시 — 확인을 누른 시점의 dueDate 를 그대로 적어 둔다.
+   * 단순 true/false 가 아니라 날짜를 저장하는 이유:
+   * 나중에 날짜를 다른 날로 바꾸면 값이 서로 달라져서 알림이 자동으로 다시 살아나게 하려고.
+   * 메모 안에 저장하므로 Drive 동기화로 다른 기기에서도 알림이 다시 뜨지 않는다.
+   */
+  reminderAck?: string
 }
 
 export const MEMO_TYPE_META: Record<MemoType, { label: string; emoji: string; color: string }> = {
