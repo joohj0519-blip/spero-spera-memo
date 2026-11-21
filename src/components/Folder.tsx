@@ -173,3 +173,44 @@ export function RoundButton({
 export function SectionLabel({ children }: { children: ReactNode }) {
   return <span className="text-[11px] font-bold tracking-[0.2em] text-char-mute">{children}</span>
 }
+
+/** 그룹(꼬리표) 이름표 — 목록 줄·상세 화면 등 어디서나 같은 모양으로 보여 준다 */
+export function GroupTag({ name, small }: { name: string; small?: boolean }) {
+  return (
+    <span
+      className={[
+        'inline-block max-w-full truncate rounded-md border border-char/25 text-char-soft font-semibold align-middle',
+        small ? 'px-1.5 py-px text-[10px]' : 'px-2 py-0.5 text-[11.5px]',
+      ].join(' ')}
+    >
+      #{name}
+    </span>
+  )
+}
+
+/** 그룹을 고르는 알약 모양 버튼 (모두 화면의 그룹 고르기, 작성 화면의 그룹 붙이기) */
+export function GroupChip({
+  name, count, active, onClick,
+}: {
+  name: string
+  count?: number
+  active: boolean
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={active}
+      onClick={onClick}
+      className={[
+        'shrink-0 h-9 px-3 rounded-full text-[12.5px] inline-flex items-center gap-1.5 border transition-colors',
+        active ? 'bg-char border-char text-paper font-bold' : 'bg-sheet border-line text-char font-semibold hover:border-char/40',
+      ].join(' ')}
+    >
+      <span className="max-w-[120px] truncate">{name}</span>
+      {count !== undefined && (
+        <span className={['tabular-nums text-[11px]', active ? 'text-[#D9CDB9]' : 'text-char-mute'].join(' ')}>{count}</span>
+      )}
+    </button>
+  )
+}

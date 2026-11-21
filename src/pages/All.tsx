@@ -4,10 +4,11 @@ import { isCompleted, listVisibleMemos } from '../db'
 import { onMemosChanged } from '../lib/sync'
 import type { Memo, MemoType } from '../types'
 import { TYPE_THEME, FACE, CHAR } from '../lib/theme'
-import { Brand, FolderStack, RoundButton, SectionLabel, Sheet } from '../components/Folder'
+import { Brand, FolderStack, GroupChip, RoundButton, SectionLabel, Sheet } from '../components/Folder'
 import type { FolderDef } from '../components/Folder'
 import { MemoCard } from '../components/MemoCard'
 import { SearchIcon } from '../components/Icons'
+import { collectGroups, memoGroups } from '../lib/groups'
 
 type Filter = MemoType | 'all'
 
@@ -27,6 +28,16 @@ export default function All() {
   const [params, setParams] = useSearchParams()
   const typeParam = params.get('type')
   const filter: Filter = isFilter(typeParam) ? typeParam : 'all'
+  // 그룹도 주소(?group=업무)에 담는다 → 홈의 그룹을 눌러 바로 들어올 수 있고, 뒤로 가기로 돌아와도 유지됨
+  const group = params.get('group')
+  const setQuery = (next: { type?: Filter; group?: string | null }) => {
+    const t = next.type ?? filter
+    const g = next.group === undefined ? group : next.group
+    const q: Record<string, string> = {}
+    if (t !== 'all') q.type = t
+    if (g) q.group = g
+    setParams(q, { replace: true })
+  }
   const [searchOpen, setSearchOpen] = useState(false)
   const [q, setQ] = useState('')
 
@@ -38,16 +49,23 @@ export default function All() {
 
   const filtered = useMemo(() => {
     let list = filter === 'all' ? memos : memos.filter((m) => m.type === filter)
+    if (group) list = list.filter((m) => memoGroups(m).includes(group))
     const needle = q.trim().toLowerCase()
     if (needle) {
       list = list.filter((m) =>
-        [m.title, m.body, ...m.items.map((i) => i.text)].some((s) =>
+        [m.title, m.body, ...m.items.map((i) => i.text), ...memoGroups(m)].some((s) =>
           s.toLowerCase().includes(needle),
         ),
       )
     }
     return list
-  }, [memos, filter, q])
+  }, [memos, filter, group, q])
+
+  // 그룹 목록과 개수는 '지금 고른 종류' 안에서 센다 (예: 할 일 탭에서는 할 일만 센 개수)
+  const groups = useMemo(
+    () => collectGroups(filter === 'all' ? memos : memos.filter((m) => m.type === filter)),
+    [memos, filter],
+  )
 
   // listVisibleMemos 가 이미 '완료는 아래로' 정렬해 주지만, 화면에서는 두 묶음으로 나눠 제목을 따로 붙인다
   const active = filtered.filter((m) => !isCompleted(m))
@@ -103,12 +121,29 @@ export default function All() {
           folders={FOLDERS}
           activeId={filter}
           tabWidth={50}
-          onSelect={(id) => setParams(id === 'all' ? {} : { type: id }, { replace: true })}
+          onSelect={(id) => setQuery({ type: id as Filter })}
         />
       }
     >
+      {/* 그룹 고르기 — 그룹이 하나라도 있을 때만 보인다. 많아지면 옆으로 밀어서 본다 */}
+      {(groups.length > 0 || group) && (
+        <div role="group" aria-label="그룹별로 보기" className="px-4 pt-3 flex gap-1.5 overflow-x-auto scrollbar-hide">
+          <GroupChip name="모든 그룹" active={!group} onClick={() => setQuery({ group: null })} />
+          {groups.map((g) => (
+            <GroupChip
+              key={g.name}
+              name={`#${g.name}`}
+              count={g.count}
+              active={group === g.name}
+              onClick={() => setQuery({ group: group === g.name ? null : g.name })}
+            />
+          ))}
+        </div>
+      )}
       {filtered.length === 0 ? (
-        <p className="text-center text-char-mute text-sm py-14">{q ? '검색 결과가 없어요.' : '메모가 없어요.'}</p>
+        <p className="text-center text-char-mute text-sm py-14">
+          {q ? '검색 결과가 없어요.' : group ? `#${group} 그룹에 메모가 없어요.` : '메모가 없어요.'}
+        </p>
       ) : (
         <div className="pb-4">
           {active.length > 0 && (

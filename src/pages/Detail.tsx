@@ -5,7 +5,8 @@ import { ko } from 'date-fns/locale'
 import { deleteMemo, getMemo, isCompleted, saveMemo } from '../db'
 import type { ChecklistItem, Memo } from '../types'
 import { TYPE_THEME, daysOverdue } from '../lib/theme'
-import { FolderStack, RoundButton, SectionLabel, Sheet } from '../components/Folder'
+import { FolderStack, GroupTag, RoundButton, SectionLabel, Sheet } from '../components/Folder'
+import { memoGroups } from '../lib/groups'
 import { BackIcon, CalendarIcon, EditIcon, FileIcon, PinIcon, TickIcon, TrashIcon } from '../components/Icons'
 
 export default function Detail() {
@@ -107,6 +108,17 @@ export default function Detail() {
             {format(new Date(memo.updatedAt), 'M월 d일 HH:mm', { locale: ko })} 수정
           </span>
         </div>
+
+        {memoGroups(memo).length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {/* 그룹을 누르면 '모두' 화면에서 그 그룹의 메모만 모아 본다 */}
+            {memoGroups(memo).map((g) => (
+              <Link key={g} to={`/all?group=${encodeURIComponent(g)}`} className="max-w-full">
+                <GroupTag name={g} />
+              </Link>
+            ))}
+          </div>
+        )}
 
         {memo.body && (
           <p className="mt-4 mb-0 text-sm leading-[1.65] whitespace-pre-line break-words">{memo.body}</p>

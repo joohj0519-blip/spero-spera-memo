@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { fileToDataUrl, getMemo, newId, saveMemo } from '../db'
+import { fileToDataUrl, getMemo, listVisibleMemos, newId, saveMemo } from '../db'
+import { cleanGroupName, collectGroups, memoGroups } from '../lib/groups'
 import type { Attachment, ChecklistItem, Memo, MemoType } from '../types'
 import { TYPE_THEME } from '../lib/theme'
-import { FolderStack, RoundButton, SectionLabel, Sheet } from '../components/Folder'
+import { FolderStack, GroupChip, RoundButton, SectionLabel, Sheet } from '../components/Folder'
 import type { FolderDef } from '../components/Folder'
 import { BackIcon, CalendarIcon, PaperclipIcon, PinIcon, PlusIcon, TickIcon, TrashIcon } from '../components/Icons'
 import { notificationPermission, requestNotificationPermission } from '../lib/reminders'
@@ -39,6 +40,13 @@ export default function Editor() {
   const [memo, setMemo] = useState<Memo>(() => empty(initialType))
   const [loaded, setLoaded] = useState(!id)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  // 지금까지 다른 메모에서 쓴 그룹 이름들 (골라 붙일 수 있게 보여 줌)
+  const [knownGroups, setKnownGroups] = useState<string[]>([])
+  const [groupDraft, setGroupDraft] = useState('')
+
+  useEffect(() => {
+    void listVisibleMemos().then((ms) => setKnownGroups(collectGroups(ms).map((g) => g.name)))
+  }, [])
 
   useEffect(() => {
     if (!id) return
@@ -61,6 +69,17 @@ export default function Editor() {
   }
   const removeItem = (idx: number) => {
     update('items', memo.items.filter((_, i) => i !== idx))
+  }
+
+  const toggleGroup = (name: string) => {
+    const cur = memoGroups(memo)
+    update('groups', cur.includes(name) ? cur.filter((g) => g !== name) : [...cur, name])
+  }
+  const addGroup = () => {
+    const name = cleanGroupName(groupDraft)
+    setGroupDraft('')
+    if (!name) return
+    if (!memoGroups(memo).includes(name)) update('groups', [...memoGroups(memo), name])
   }
 
   const onPickFiles = async (files: FileList | null) => {
@@ -92,6 +111,8 @@ export default function Editor() {
       title: memo.title.trim(),
       body: memo.body.trim(),
       items: memo.items.filter((i) => i.text.trim().length > 0),
+      // 입력칸에 적어 놓고 '추가'를 안 누른 그룹 이름도 저장할 때 함께 붙여 준다 (깜빡해도 사라지지 않게)
+      groups: [...new Set([...memoGroups(memo), ...(cleanGroupName(groupDraft) ? [cleanGroupName(groupDraft)] : [])])],
       updatedAt: Date.now(),
     }
     if (!final.title && !final.body && final.items.length === 0 && final.attachments.length === 0) {
@@ -268,6 +289,50 @@ export default function Editor() {
               e.target.value = ''
             }}
           />
+        </div>
+
+        {/* 그룹 — 전에 쓴 그룹은 눌러서 붙이고, 새 그룹은 이름을 적어 추가 (여러 개 가능) */}
+        <div className="mt-4 flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <SectionLabel>그룹</SectionLabel>
+            <span className="text-[11.5px] text-char-mute">여러 개 붙일 수 있어요</span>
+          </div>
+          {/* 이 메모에 붙은 그룹(새로 만든 것 포함)을 앞에, 나머지 기존 그룹을 뒤에 */}
+          {(() => {
+            const mine = memoGroups(memo)
+            const names = [...mine, ...knownGroups.filter((g) => !mine.includes(g))]
+            return names.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {names.map((g) => (
+                  <GroupChip key={g} name={`#${g}`} active={mine.includes(g)} onClick={() => toggleGroup(g)} />
+                ))}
+              </div>
+            )
+          })()}
+          <div className="flex gap-2">
+            <input
+              value={groupDraft}
+              onChange={(e) => setGroupDraft(e.target.value)}
+              onKeyDown={(e) => {
+                // 한글 조합 중의 Enter 는 글자 확정용이라 건너뛴다 (안 그러면 마지막 글자가 두 번 들어감)
+                if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
+                  e.preventDefault()
+                  addGroup()
+                }
+              }}
+              placeholder="새 그룹 이름 (예: 업무)"
+              aria-label="새 그룹 이름"
+              maxLength={20}
+              className="flex-1 min-w-0 h-11 rounded-[10px] bg-sheet border border-line px-3 text-sm placeholder:text-char-mute"
+            />
+            <button
+              type="button"
+              onClick={addGroup}
+              className="shrink-0 h-11 px-4 rounded-[10px] border-[1.5px] border-char text-char text-[13px] font-bold"
+            >
+              추가
+            </button>
+          </div>
         </div>
 
         {/* 첨부파일 목록 */}

@@ -8,6 +8,7 @@ import { onMemosChanged } from '../lib/sync'
 import type { Memo, MemoType } from '../types'
 import { TYPE_THEME, FACE, daysOverdue } from '../lib/theme'
 import { TabShape, TAB_H } from '../components/Folder'
+import { collectGroups } from '../lib/groups'
 
 /* ───────── 제목: 손글씨풍 알록달록 글자 ─────────
    글자마다 크기·색·기울기·높낮이를 조금씩 달리해 손으로 쓴 듯한 느낌을 낸다. [글자, 색, 크기, 기울기(도), 위아래 이동(px)] */
@@ -123,6 +124,8 @@ export default function Home() {
   const dueToday = dated.filter((m) => daysOverdue(m) === 0).length
   const overdue = dated.filter((m) => (daysOverdue(m) ?? -1) > 0).length
 
+  const groups = collectGroups(memos)
+
   const todo = TYPE_THEME.todo, check = TYPE_THEME.checklist, note = TYPE_THEME.note
 
   return (
@@ -233,6 +236,24 @@ export default function Home() {
             <NewCard key={t} type={t} />
           ))}
         </div>
+        {/* 그룹 — 누르면 '모두' 화면에서 그 그룹의 메모만 모아 본다. 그룹이 없으면 이 줄은 안 보인다 */}
+        {groups.length > 0 && (
+          <div className="pt-3.5">
+            <div className="px-6 text-[11px] font-bold tracking-[0.24em] text-char-mute">GROUP</div>
+            <div className="mt-2 px-5 flex gap-1.5 overflow-x-auto scrollbar-hide">
+              {groups.map((g) => (
+                <Link
+                  key={g.name}
+                  to={`/all?group=${encodeURIComponent(g.name)}`}
+                  className="shrink-0 h-9 px-3 rounded-full bg-sheet border border-line text-char text-[12.5px] font-semibold inline-flex items-center gap-1.5 hover:border-char/40"
+                >
+                  <span className="max-w-[120px] truncate">#{g.name}</span>
+                  <span className="tabular-nums text-[11px] text-char-mute">{g.count}</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

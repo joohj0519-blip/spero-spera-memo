@@ -3,7 +3,8 @@ import { listMemos, listVisibleMemos } from '../db'
 import type { Memo } from '../types'
 import { TYPE_THEME, FACE, CHAR } from '../lib/theme'
 import { Brand, FolderStack, Sheet } from '../components/Folder'
-import { AppIcon, BellIcon, DownloadIcon, SyncIcon } from '../components/Icons'
+import { AppIcon, BellIcon, DownloadIcon, GridIcon, SyncIcon } from '../components/Icons'
+import { cleanGroupName, collectGroups, removeGroup, renameGroup } from '../lib/groups'
 import type { ComponentType, ReactNode, SVGProps } from 'react'
 import { useInstallPrompt, useStandalone } from '../hooks/usePwa'
 import {
@@ -119,6 +120,18 @@ export default function Profile() {
     URL.revokeObjectURL(url)
   }
 
+  const groups = collectGroups(memos)
+  const handleRenameGroup = async (name: string) => {
+    const next = cleanGroupName(window.prompt(`'${name}' 그룹의 새 이름을 적어 주세요.`, name) ?? '')
+    if (!next || next === name) return
+    await renameGroup(name, next)
+  }
+  const handleRemoveGroup = async (name: string, count: number) => {
+    // 그룹만 떼어 내고 메모는 그대로 둔다는 점을 분명히 알려 준다
+    if (!window.confirm(`'${name}' 그룹을 지울까요?\n메모 ${count}개에서 이 그룹 표시만 떼어 내고, 메모는 지우지 않아요.`)) return
+    await removeGroup(name)
+  }
+
   const remoteFileId = getRemoteFileId()
   const origin = typeof window !== 'undefined' ? window.location.origin : ''
 
@@ -173,6 +186,30 @@ export default function Profile() {
             </div>
           ))}
         </div>
+
+        {/* 그룹 관리 */}
+        <Card Icon={GridIcon} title="그룹" status={<Chip cls={OFF}>{groups.length}개</Chip>}>
+          {groups.length === 0 ? (
+            <p className="mt-2 mb-0 text-xs leading-[1.55] text-char-soft">
+              아직 그룹이 없어요. 메모를 쓸 때 <b>그룹</b> 칸에 이름을 적으면 만들어져요.
+            </p>
+          ) : (
+            <ul className="mt-2 mb-0 p-0 list-none flex flex-col">
+              {groups.map((g) => (
+                <li key={g.name} className="flex items-center gap-2 h-11 border-b border-rule last:border-b-0">
+                  <span className="flex-1 min-w-0 truncate text-[13.5px] font-semibold">#{g.name}</span>
+                  <span className="shrink-0 text-[11.5px] text-char-mute tabular-nums">{g.count}개</span>
+                  <button type="button" onClick={() => void handleRenameGroup(g.name)} className="shrink-0 h-9 px-2.5 rounded-lg border border-line text-xs font-semibold">
+                    이름 변경
+                  </button>
+                  <button type="button" onClick={() => void handleRemoveGroup(g.name, g.count)} className="shrink-0 h-9 px-2.5 rounded-lg border border-terra/40 text-terra-dark text-xs font-semibold">
+                    지우기
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
 
         {/* Google Drive 동기화 */}
         <Card

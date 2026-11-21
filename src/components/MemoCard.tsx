@@ -4,6 +4,8 @@ import type { Memo } from '../types'
 import { isCompleted } from '../db'
 import { TYPE_THEME, daysOverdue } from '../lib/theme'
 import { PinIcon, TickIcon } from './Icons'
+import { GroupTag } from './Folder'
+import { memoGroups } from '../lib/groups'
 
 /**
  * 목록의 메모 한 줄.
@@ -14,6 +16,14 @@ import { PinIcon, TickIcon } from './Icons'
 export function MemoCard({ memo }: { memo: Memo }) {
   const t = TYPE_THEME[memo.type]
   const done = isCompleted(memo)
+  // 줄이 좁아서 그룹은 첫 번째 것만 보여 주고, 더 있으면 '+2'처럼 개수만 덧붙인다
+  const groups = memoGroups(memo)
+  const groupTag = groups.length > 0 && (
+    <span className="shrink min-w-0 max-w-[84px] inline-flex items-center gap-1">
+      <GroupTag name={groups[0]} small />
+      {groups.length > 1 && <span className="shrink-0 text-[10px] font-semibold text-char-mute">+{groups.length - 1}</span>}
+    </span>
+  )
 
   if (done) {
     return (
@@ -27,6 +37,7 @@ export function MemoCard({ memo }: { memo: Memo }) {
         <span className="flex-1 min-w-0 truncate text-[13px] font-medium line-through">
           {memo.title || '제목 없음'}
         </span>
+        {groupTag}
         <span className="shrink-0 text-[10.5px] font-semibold">완료</span>
       </Link>
     )
@@ -57,6 +68,7 @@ export function MemoCard({ memo }: { memo: Memo }) {
         <t.Icon width={17} height={17} />
       </span>
       <span className="flex-1 min-w-0 truncate text-[13.5px] font-semibold">{memo.title || '제목 없음'}</span>
+      {groupTag}
       {memo.pinned && <PinIcon aria-label="고정됨" width={15} height={15} className="shrink-0 text-terra-light" />}
       {memo.items.length > 0 && (
         <span className="shrink-0 px-2 py-[3px] rounded-full bg-sand-tint text-char-soft text-[10.5px] font-bold tabular-nums">

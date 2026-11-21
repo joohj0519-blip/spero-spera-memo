@@ -35,6 +35,8 @@ export interface Memo {
    * 메모 안에 저장하므로 Drive 동기화로 다른 기기에서도 알림이 다시 뜨지 않는다.
    */
   reminderAck?: string
+  /** 그룹(꼬리표) 이름들 — 메모 하나에 여러 개 붙일 수 있다. 없으면 그룹 없음. */
+  groups?: string[]
 }
 
 export const MEMO_TYPE_META: Record<MemoType, { label: string; emoji: string; color: string }> = {
