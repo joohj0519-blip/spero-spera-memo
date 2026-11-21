@@ -236,11 +236,12 @@ export default function Home() {
             <NewCard key={t} type={t} />
           ))}
         </div>
-        {/* 그룹 — 누르면 '모두' 화면에서 그 그룹의 메모만 모아 본다. 그룹이 없으면 이 줄은 안 보인다 */}
+        {/* 그룹 — 누르면 '모두' 화면에서 그 그룹의 메모만 모아 본다. 그룹이 없으면 이 줄은 안 보인다.
+            그룹이 많아 한 줄에 다 안 들어가면 다음 줄로 넘어간다 (옆으로 밀어 보게 하면 끝이 잘려 보여서) */}
         {groups.length > 0 && (
           <div className="pt-3.5">
             <div className="px-6 text-[11px] font-bold tracking-[0.24em] text-char-mute">GROUP</div>
-            <div className="mt-2 px-5 flex gap-1.5 overflow-x-auto scrollbar-hide">
+            <div className="mt-2 px-5 flex flex-wrap gap-1.5">
               {groups.map((g) => (
                 <Link
                   key={g.name}

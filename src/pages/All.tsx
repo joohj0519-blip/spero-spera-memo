@@ -125,9 +125,9 @@ export default function All() {
         />
       }
     >
-      {/* 그룹 고르기 — 그룹이 하나라도 있을 때만 보인다. 많아지면 옆으로 밀어서 본다 */}
+      {/* 그룹 고르기 — 그룹이 하나라도 있을 때만 보인다. 많아지면 다음 줄로 넘어간다 */}
       {(groups.length > 0 || group) && (
-        <div role="group" aria-label="그룹별로 보기" className="px-4 pt-3 flex gap-1.5 overflow-x-auto scrollbar-hide">
+        <div role="group" aria-label="그룹별로 보기" className="px-4 pt-3 flex flex-wrap gap-1.5">
           <GroupChip name="모든 그룹" active={!group} onClick={() => setQuery({ group: null })} />
           {groups.map((g) => (
             <GroupChip
