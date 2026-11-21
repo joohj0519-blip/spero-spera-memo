@@ -50,10 +50,13 @@ export async function listMemos(): Promise<Memo[]> {
  * - 할 일: 완료 체크됨
  * - 체크리스트: 항목이 1개 이상이고 전부 체크됨 (빈 체크리스트는 아직 작성 중으로 봄)
  * - 일반 메모: 완료 개념이 없으므로 항상 미완료 취급
+ * - 일정: 날짜가 지나면 완료(지난 일정) 취급
  */
 export function isCompleted(memo: Memo): boolean {
   if (memo.type === 'todo') return !!memo.done
   if (memo.type === 'checklist') return memo.items.length > 0 && memo.items.every((i) => i.checked)
+  // 일정: 날짜가 어제 이전이면 '지난 일정'으로 보고 아래로 내린다 (오늘 일정은 아직 진행 중)
+  if (memo.type === 'event') return !!memo.dueDate && memo.dueDate < localToday()
   return false
 }
 
@@ -90,4 +93,10 @@ export function fileToDataUrl(file: File): Promise<string> {
     reader.onerror = () => reject(reader.error)
     reader.readAsDataURL(file)
   })
+}
+
+/** 기기 시간 기준 오늘 날짜 'YYYY-MM-DD' — 날짜 문자열끼리는 글자 비교만으로 앞뒤를 가릴 수 있다 */
+function localToday(): string {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }

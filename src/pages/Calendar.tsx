@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import {
   addDays,
   addMonths,
@@ -18,7 +19,7 @@ import { TYPE_THEME, FACE, CHAR } from '../lib/theme'
 import { Brand, FolderStack, RoundButton, Sheet } from '../components/Folder'
 import type { FolderDef } from '../components/Folder'
 import { MemoCard } from '../components/MemoCard'
-import { BackIcon, NextIcon } from '../components/Icons'
+import { BackIcon, NextIcon, PlusIcon } from '../components/Icons'
 
 type View = 'month' | 'week'
 
@@ -88,6 +89,17 @@ export default function CalendarView() {
       : isSameMonth(days[0], days[6])
         ? `${format(days[0], 'M월 d', { locale: ko })}–${format(days[6], 'd일', { locale: ko })}`
         : `${format(days[0], 'M월 d일', { locale: ko })}–${format(days[6], 'M월 d일', { locale: ko })}`
+
+  /** 고른 날짜로 일정을 등록하는 버튼 — 작성 화면이 그 날짜를 미리 넣은 채로 열린다 */
+  const addEvent = (
+    <Link
+      to={`/new?type=event&date=${keyOf(selected)}`}
+      className="h-11 rounded-[10px] border-[1.5px] border-dashed border-ink-400 text-char-soft text-[13.5px] font-semibold flex items-center justify-center gap-1.5 hover:bg-sheet"
+    >
+      <PlusIcon aria-hidden width={16} height={16} strokeWidth={2.2} />
+      {format(selected, 'M월 d일', { locale: ko })}에 일정 등록
+    </Link>
+  )
 
   /** 날짜 아래에 찍는 점 — 그날 메모의 종류 색 (최대 3개) */
   const dots = (d: Date, onDark: boolean) =>
@@ -188,6 +200,7 @@ export default function CalendarView() {
             ) : (
               dayMemos.map((m) => <MemoCard key={m.id} memo={m} />)
             )}
+            {addEvent}
           </div>
         </>
       ) : (
@@ -218,7 +231,9 @@ export default function CalendarView() {
               )
             })}
           </div>
-          <div className="px-4 pt-3.5 pb-4 flex flex-col">
+          {/* 위의 일~토 칸에서 날짜를 고른 뒤 이 버튼으로 그 날짜에 일정을 등록한다 */}
+          <div className="px-4 pt-3 flex flex-col">{addEvent}</div>
+          <div className="px-4 pt-2 pb-4 flex flex-col">
             {days.map((d) => {
               const list = memosByDate.get(keyOf(d)) ?? []
               const isToday = isSameDay(d, today)

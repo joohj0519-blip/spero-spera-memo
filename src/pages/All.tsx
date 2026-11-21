@@ -14,13 +14,13 @@ type Filter = MemoType | 'all'
 
 // 종류 고르기 탭 — 뒤에서 앞으로 한 계단씩 내려오는 서류철. 탭 위치(x)는 고정이고 선택된 것만 맨 앞으로 온다.
 const FOLDERS: FolderDef[] = [
-  { id: 'todo', label: TYPE_THEME.todo.label, color: TYPE_THEME.todo.bg, fg: TYPE_THEME.todo.fg, x: 266 },
-  { id: 'checklist', label: TYPE_THEME.checklist.label, color: TYPE_THEME.checklist.bg, fg: TYPE_THEME.checklist.fg, x: 182 },
-  { id: 'note', label: TYPE_THEME.note.label, color: TYPE_THEME.note.bg, fg: TYPE_THEME.note.fg, x: 98 },
-  { id: 'all', label: '전체', color: FACE, fg: CHAR, x: 14 },
+  ...(['event', 'todo', 'checklist', 'note'] as MemoType[]).map((t, i) => ({
+    id: t, label: TYPE_THEME[t].label, color: TYPE_THEME[t].bg, fg: TYPE_THEME[t].fg, x: 0, slot: 4 - i,
+  })),
+  { id: 'all', label: '전체', color: FACE, fg: CHAR, x: 0, slot: 0 },
 ]
 
-const isFilter = (v: string | null): v is Filter => v === 'all' || v === 'note' || v === 'checklist' || v === 'todo'
+const isFilter = (v: string | null): v is Filter => v === 'all' || v === 'note' || v === 'checklist' || v === 'todo' || v === 'event'
 
 export default function All() {
   const [memos, setMemos] = useState<Memo[]>([])
@@ -120,7 +120,8 @@ export default function All() {
           label="종류별로 보기"
           folders={FOLDERS}
           activeId={filter}
-          tabWidth={50}
+          tabWidth={46}
+          spread
           onSelect={(id) => setQuery({ type: id as Filter })}
         />
       }

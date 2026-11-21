@@ -38,7 +38,7 @@ export function MemoCard({ memo }: { memo: Memo }) {
           {memo.title || '제목 없음'}
         </span>
         {groupTag}
-        <span className="shrink-0 text-[10.5px] font-semibold">완료</span>
+        <span className="shrink-0 text-[10.5px] font-semibold">{memo.type === 'event' ? '지남' : '완료'}</span>
       </Link>
     )
   }
@@ -46,11 +46,12 @@ export function MemoCard({ memo }: { memo: Memo }) {
   const checkedCount = memo.items.filter((i) => i.checked).length
   const over = daysOverdue(memo)
   // 마감 표시: 지남(진한 주황) / 오늘(연한 주황) / 앞으로(연한 초록, 날짜만)
-  // 일반 메모는 '끝내야 하는 일'이 아니라서 지남·마감 대신 날짜만 보여 준다
+  // 일반 메모·일정은 '끝내야 하는 일'이 아니라서 지남·마감 대신 날짜만 보여 준다 (일정은 당일에 '오늘')
   const dateOnly = memo.dueDate ? { text: format(parseISO(memo.dueDate), 'M.d'), cls: 'bg-sage-tint text-sage-ink' } : null
   const due =
     over === null ? null
       : memo.type === 'note' ? dateOnly
+        : memo.type === 'event' ? (over === 0 ? { text: '오늘', cls: 'bg-terra-tint text-terra-ink' } : dateOnly)
         : over > 0 ? { text: `${over}일 지남`, cls: 'bg-terra text-face' }
           : over === 0 ? { text: '오늘 마감', cls: 'bg-terra-tint text-terra-ink' }
             : dateOnly

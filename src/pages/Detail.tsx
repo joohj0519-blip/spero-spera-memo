@@ -63,7 +63,11 @@ export default function Detail() {
   const checkedCount = memo.items.filter((i) => i.checked).length
   const over = daysOverdue(memo)
   // 일반 메모는 마감 개념이 없으므로 '오늘 마감·N일 지남' 꼬리말을 붙이지 않는다
-  const dueNote = over === null || memo.type === 'note' || isCompleted(memo) ? '' : over === 0 ? ' · 오늘 마감' : over > 0 ? ` · ${over}일 지남` : ''
+  // 일정도 '마감'이 아니라 그날 있는 일이므로 당일에만 '오늘'이라고 붙인다
+  const dueNote =
+    over === null || memo.type === 'note' || isCompleted(memo) ? ''
+      : memo.type === 'event' ? (over === 0 ? ' · 오늘' : '')
+        : over === 0 ? ' · 오늘 마감' : over > 0 ? ` · ${over}일 지남` : ''
 
   return (
     <Sheet

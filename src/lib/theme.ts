@@ -1,6 +1,6 @@
 import type { ComponentType, SVGProps } from 'react'
 import type { Memo, MemoType } from '../types'
-import { CheckIcon, NoteIcon, TargetIcon } from '../components/Icons'
+import { CalendarIcon, CheckIcon, NoteIcon, TargetIcon } from '../components/Icons'
 
 /**
  * 메모 종류별 색·이름·아이콘을 한곳에 모아 둔 표.
@@ -14,6 +14,8 @@ export const TYPE_THEME: Record<
   note: { label: '메모', bg: '#E0CDB0', fg: '#2B2A28', Icon: NoteIcon },
   checklist: { label: '체크리스트', bg: '#A84E2A', fg: '#FBF6EC', Icon: CheckIcon },
   todo: { label: '할 일', bg: '#9AA58C', fg: '#2B2A28', Icon: TargetIcon },
+  // 일정 — 제목의 금빛과 같은 계열(황토색). 글자는 차콜이라 읽기 쉬움
+  event: { label: '일정', bg: '#D2A75C', fg: '#2B2A28', Icon: CalendarIcon },
 }
 
 /** 맨 앞 서류철(속지 면) 색 */

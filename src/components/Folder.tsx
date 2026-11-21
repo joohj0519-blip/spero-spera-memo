@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 
 /* ─────────────────────────────────────────────────────────
@@ -51,8 +52,11 @@ export interface FolderDef {
   color: string
   /** 탭 글자 색 */
   fg: string
-  /** 탭의 왼쪽 위치(px) — 선택이 바뀌어도 탭은 제자리에 있고, 앞뒤 순서만 바뀐다 */
+  /** 탭의 왼쪽 위치(px) — 선택이 바뀌어도 탭은 제자리에 있고, 앞뒤 순서만 바뀐다.
+   *  FolderStack 에 spread 를 주면 이 값 대신 '왼쪽에서 몇 번째 자리인지'(slot)로 자동 배치된다 */
   x: number
+  /** spread 배치일 때의 자리 번호 (0 = 맨 왼쪽) */
+  slot?: number
 }
 
 /**
@@ -68,6 +72,7 @@ export function FolderStack({
   label,
   step = 24,
   frontStrip = 10,
+  spread = false,
 }: {
   folders: FolderDef[]
   activeId: string
@@ -79,13 +84,32 @@ export function FolderStack({
   step?: number
   /** 맨 앞 서류철이 속지 면 위로 보이는 높이 */
   frontStrip?: number
+  /** true 면 탭을 화면 폭에 맞춰 왼쪽 끝~오른쪽 끝 사이에 고르게 벌려 놓는다 (slot 순서대로) */
+  spread?: boolean
 }) {
+  // 화면 폭을 재서 탭 위치를 계산 — 휴대폰(좁음)과 PC 창(넓음)에서 모두 넘치지 않게 하려는 것
+  const boxRef = useRef<HTMLDivElement>(null)
+  const [boxW, setBoxW] = useState(390)
+  useEffect(() => {
+    const el = boxRef.current
+    if (!spread || !el) return
+    const apply = () => setBoxW(el.clientWidth)
+    apply()
+    const ro = new ResizeObserver(apply)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [spread])
+  const tabTotal = tabWidth + SLOPE_W * 2
+  const gap = folders.length > 1 ? (boxW - 20 - tabTotal) / (folders.length - 1) : 0
+  // 탭끼리는 위아래로 어긋나 있어 조금 겹쳐도 괜찮지만, 너무 벌어지지는 않게 간격에 상한을 둠
+  const xOf = (f: FolderDef) => (spread ? 10 + Math.min(gap, tabTotal - 8) * (f.slot ?? 0) : f.x)
+
   // 선택되지 않은 것은 원래 순서대로 뒤에, 선택된 것은 맨 앞에
   const ordered = [...folders.filter((f) => f.id !== activeId), ...folders.filter((f) => f.id === activeId)]
   const height = TAB_H + step * (ordered.length - 1) + frontStrip
   return (
     // overflow-hidden: 서류철 그림자가 묶음 아래(속지 면)로 번져 줄처럼 보이는 것을 막음
-    <div role="group" aria-label={label} className="relative shrink-0 overflow-hidden" style={{ height }}>
+    <div ref={boxRef} role="group" aria-label={label} className="relative shrink-0 overflow-hidden" style={{ height }}>
       {ordered.map((f, i) => {
         const active = f.id === activeId
         const tab = (
@@ -110,12 +134,12 @@ export function FolderStack({
                 aria-pressed={active}
                 onClick={() => onSelect(f.id)}
                 className="absolute p-0"
-                style={{ top: -(TAB_H - 1), left: f.x }}
+                style={{ top: -(TAB_H - 1), left: xOf(f) }}
               >
                 {tab}
               </button>
             ) : (
-              <div className="absolute" style={{ top: -(TAB_H - 1), left: f.x }}>
+              <div className="absolute" style={{ top: -(TAB_H - 1), left: xOf(f) }}>
                 {tab}
               </div>
             )}

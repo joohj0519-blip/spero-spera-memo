@@ -120,11 +120,13 @@ export default function Home() {
     todo: open.filter((m) => m.type === 'todo').length,
   }
   // 요약 띠: 날짜가 있는 할 일·체크리스트 중 아직 안 끝난 것 기준
-  const dated = open.filter((m) => m.type !== 'note')
+  const dated = open.filter((m) => m.type === 'todo' || m.type === 'checklist')
   const dueToday = dated.filter((m) => daysOverdue(m) === 0).length
   const overdue = dated.filter((m) => (daysOverdue(m) ?? -1) > 0).length
 
   const groups = collectGroups(memos)
+  // 오늘 이후(오늘 포함)의 일정 개수 — 지난 일정은 isCompleted 로 걸러져 open 에 없다
+  const upcoming = open.filter((m) => m.type === 'event').length
 
   const todo = TYPE_THEME.todo, check = TYPE_THEME.checklist, note = TYPE_THEME.note
 
@@ -209,12 +211,15 @@ export default function Home() {
           note={<>자유롭게 적어두기 · 전체 <b className="font-extrabold">{count.note}</b></>}
         />
 
-        <Link to="/calendar" className="absolute inset-x-0 bottom-0" style={{ top: TOP.front, background: FACE, ...SHADOW }}>
-          <span className="absolute" style={{ top: -(TAB_H - 1), right: 14 }}>
+        {/* 맨 앞 서류철 = 캘린더. 탭을 누르면 캘린더로, 오른쪽 버튼을 누르면 오늘 날짜로 일정 등록 */}
+        <div className="absolute inset-x-0 bottom-0" style={{ top: TOP.front, background: FACE, ...SHADOW }}>
+          <Link to="/calendar" aria-label="캘린더 열기" className="absolute" style={{ top: -(TAB_H - 1), right: 14 }}>
             <TabShape color={FACE} fg="#8F3F1F" width={96}>{format(now, 'yyyy · M월')}</TabShape>
+          </Link>
+          <span className="absolute left-6 top-[34px] text-[11px] font-bold tracking-[0.24em] text-char-mute">
+            TODAY{upcoming > 0 && <span className="ml-2 tracking-normal font-semibold">· 다가오는 일정 {upcoming}</span>}
           </span>
-          <span className="absolute left-6 top-[34px] text-[11px] font-bold tracking-[0.24em] text-char-mute">TODAY</span>
-        </Link>
+        </div>
 
         {/* 맨 앞 서류철을 물고 있는 집게 (장식) */}
         <svg aria-hidden width="46" height="56" viewBox="0 0 46 56" className="absolute left-11 top-[258px] pointer-events-none">
@@ -231,8 +236,8 @@ export default function Home() {
           <Stat value={dueToday} label="오늘 할 일" accent className="border-x border-char-soft" />
           <Stat value={overdue} label="기한 지남" />
         </div>
-        <div className="px-5 pt-3 grid grid-cols-3 gap-2.5">
-          {(['note', 'checklist', 'todo'] as MemoType[]).map((t) => (
+        <div className="px-5 pt-3 grid grid-cols-4 gap-2">
+          {(['note', 'checklist', 'todo', 'event'] as MemoType[]).map((t) => (
             <NewCard key={t} type={t} />
           ))}
         </div>
@@ -269,7 +274,7 @@ function Stat({ value, label, accent, className = '' }: { value: number; label: 
   )
 }
 
-const NEW_DESC: Record<MemoType, string> = { note: '자유롭게 적기', checklist: '항목별 정리', todo: '오늘의 미션' }
+const NEW_DESC: Record<MemoType, string> = { note: '자유롭게 적기', checklist: '항목별 정리', todo: '오늘의 미션', event: '날짜에 올리기' }
 
 function NewCard({ type }: { type: MemoType }) {
   const t = TYPE_THEME[type]
@@ -277,14 +282,14 @@ function NewCard({ type }: { type: MemoType }) {
     <Link
       to={`/new?type=${type}`}
       aria-label={`${t.label} 새로 쓰기`}
-      className="h-[92px] px-2.5 pb-[9px] flex flex-col items-center justify-between rounded-xl bg-paper border border-line text-char hover:border-char/40 active:scale-[0.99] transition-all"
+      className="h-[92px] px-1 pb-[9px] flex flex-col items-center justify-between rounded-xl bg-paper border border-line text-char hover:border-char/40 active:scale-[0.99] transition-all"
     >
       <span aria-hidden className="w-9 h-9 rounded-b-full grid place-items-center" style={{ background: t.bg, color: t.fg }}>
         <t.Icon width={17} height={17} />
       </span>
       <span className="flex flex-col items-center gap-0.5">
-        <span className="text-[13.5px] font-bold">{t.label}</span>
-        <span className="text-[11px] text-char-mute">{NEW_DESC[type]}</span>
+        <span className="text-[13px] font-bold whitespace-nowrap">{t.label}</span>
+        <span className="text-[10.5px] text-char-mute whitespace-nowrap">{NEW_DESC[type]}</span>
       </span>
     </Link>
   )

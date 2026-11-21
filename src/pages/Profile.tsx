@@ -101,6 +101,7 @@ export default function Profile() {
     note: memos.filter((m) => m.type === 'note').length,
     checklist: memos.filter((m) => m.type === 'checklist').length,
     todo: memos.filter((m) => m.type === 'todo').length,
+    event: memos.filter((m) => m.type === 'event').length,
   }
   const totalAttachments = memos.reduce((acc, m) => acc + m.attachments.length, 0)
   const totalBytes = memos.reduce(
@@ -175,10 +176,10 @@ export default function Profile() {
             <div className="text-[10.5px] text-[#D9CDB9]">첨부파일</div>
           </div>
         </div>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-4 gap-1.5">
           {(Object.keys(counts) as Array<keyof typeof counts>).map((k) => (
-            <div key={k} className="h-[52px] rounded-[10px] bg-sheet border border-line flex items-center gap-2 px-2.5">
-              <span aria-hidden className="w-2 h-7 rounded-full" style={{ background: TYPE_THEME[k].bg }} />
+            <div key={k} className="h-[52px] rounded-[10px] bg-sheet border border-line flex items-center gap-1.5 px-2">
+              <span aria-hidden className="w-1.5 h-7 shrink-0 rounded-full" style={{ background: TYPE_THEME[k].bg }} />
               <span className="flex flex-col min-w-0">
                 <span className="text-[11px] text-char-mute truncate">{TYPE_THEME[k].label}</span>
                 <span className="text-[15px] font-bold leading-tight tabular-nums">{counts[k]}</span>

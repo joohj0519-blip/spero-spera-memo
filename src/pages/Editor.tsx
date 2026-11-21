@@ -3,15 +3,16 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { fileToDataUrl, getMemo, listVisibleMemos, newId, saveMemo } from '../db'
 import { cleanGroupName, collectGroups, memoGroups } from '../lib/groups'
 import type { Attachment, ChecklistItem, Memo, MemoType } from '../types'
-import { TYPE_THEME } from '../lib/theme'
+import { TYPE_THEME, todayKey } from '../lib/theme'
 import { FolderStack, GroupChip, RoundButton, SectionLabel, Sheet } from '../components/Folder'
 import type { FolderDef } from '../components/Folder'
 import { BackIcon, CalendarIcon, PaperclipIcon, PinIcon, PlusIcon, TickIcon, TrashIcon } from '../components/Icons'
 import { notificationPermission, requestNotificationPermission } from '../lib/reminders'
 
-const empty = (type: MemoType): Memo => ({
+const empty = (type: MemoType, dueDate?: string): Memo => ({
   id: newId(),
   type,
+  dueDate,
   title: '',
   body: '',
   items: [],
@@ -22,22 +23,29 @@ const empty = (type: MemoType): Memo => ({
 })
 
 // 종류 고르기 탭 — 선택한 종류의 서류철이 맨 앞으로 온다. 탭 위치(x)는 고정.
-const TYPE_FOLDERS: FolderDef[] = (
-  [['todo', 250], ['note', 132], ['checklist', 14]] as Array<[MemoType, number]>
-).map(([type, x]) => ({
+const TYPE_FOLDERS: FolderDef[] = (['event', 'todo', 'note', 'checklist'] as MemoType[]).map((type, i) => ({
   id: type,
   label: TYPE_THEME[type].label,
   color: TYPE_THEME[type].bg,
   fg: TYPE_THEME[type].fg,
-  x,
+  x: 0,
+  slot: 3 - i,
 }))
+
+const isMemoType = (v: string | null): v is MemoType => v === 'note' || v === 'checklist' || v === 'todo' || v === 'event'
+const isDateKey = (v: string | null): v is string => !!v && /^\d{4}-\d{2}-\d{2}$/.test(v)
 
 export default function Editor() {
   const { id } = useParams()
   const [params] = useSearchParams()
   const navigate = useNavigate()
-  const initialType = (params.get('type') as MemoType | null) ?? 'note'
-  const [memo, setMemo] = useState<Memo>(() => empty(initialType))
+  const typeParam = params.get('type')
+  const initialType: MemoType = isMemoType(typeParam) ? typeParam : 'note'
+  // 캘린더에서 '일정 등록'을 누르면 주소에 ?date=2026-11-21 처럼 날짜가 붙어 온다 → 그 날짜를 미리 넣어 둠.
+  // 일정인데 날짜가 안 붙어 왔으면 오늘 날짜로 시작한다 (일정은 날짜가 꼭 있어야 캘린더에 보이므로)
+  const dateParam = params.get('date')
+  const initialDate = isDateKey(dateParam) ? dateParam : initialType === 'event' ? todayKey() : undefined
+  const [memo, setMemo] = useState<Memo>(() => empty(initialType, initialDate))
   const [loaded, setLoaded] = useState(!id)
   const fileInputRef = useRef<HTMLInputElement>(null)
   // 지금까지 다른 메모에서 쓴 그룹 이름들 (골라 붙일 수 있게 보여 줌)
@@ -119,6 +127,13 @@ export default function Editor() {
       navigate(-1)
       return
     }
+    // 일정은 날짜가 없으면 캘린더 어디에도 나타나지 않으므로, 저장 전에 날짜를 고르게 한다
+    if (final.type === 'event' && !final.dueDate) {
+      window.alert('일정은 날짜가 있어야 캘린더에 보여요. 날짜를 골라 주세요.')
+      return
+    }
+    // 일정에는 체크 항목이 없다 — 다른 종류로 쓰다가 일정으로 바꾼 경우 남은 항목은 저장하지 않음
+    if (final.type === 'event') final.items = []
     await saveMemo(final)
     navigate(`/memo/${final.id}`, { replace: true })
   }
@@ -153,9 +168,13 @@ export default function Editor() {
           label="종류 선택"
           folders={TYPE_FOLDERS}
           activeId={memo.type}
-          tabWidth={64}
+          tabWidth={54}
           frontStrip={14}
-          onSelect={(t) => update('type', t as MemoType)}
+          spread
+          onSelect={(t) => {
+            // 일정으로 바꿨는데 날짜가 비어 있으면 오늘 날짜를 넣어 준다
+            setMemo((m) => ({ ...m, type: t as MemoType, dueDate: t === 'event' && !m.dueDate ? todayKey() : m.dueDate }))
+          }}
         />
       }
     >
@@ -166,7 +185,7 @@ export default function Editor() {
           <input
             value={memo.title}
             onChange={(e) => update('title', e.target.value)}
-            placeholder="제목을 입력하세요"
+            placeholder={memo.type === 'event' ? '일정 이름을 입력하세요' : '제목을 입력하세요'}
             className="h-[46px] bg-transparent border-b-2 border-char text-xl font-bold text-char placeholder:text-char-mute placeholder:font-medium"
           />
         </label>
@@ -239,12 +258,12 @@ export default function Editor() {
 
         {/* 내용 */}
         <label className="mt-4 flex flex-col gap-1.5">
-          <SectionLabel>{memo.type === 'note' ? '내용' : '메모'}</SectionLabel>
+          <SectionLabel>{memo.type === 'note' || memo.type === 'event' ? '내용' : '메모'}</SectionLabel>
           <textarea
             value={memo.body}
             onChange={(e) => update('body', e.target.value)}
-            placeholder={memo.type === 'note' ? '내용을 자유롭게 적어보세요…' : '메모 (선택)'}
-            rows={memo.type === 'note' ? 10 : 3}
+            placeholder={memo.type === 'note' ? '내용을 자유롭게 적어보세요…' : memo.type === 'event' ? '장소·준비물 등 (선택)' : '메모 (선택)'}
+            rows={memo.type === 'note' ? 10 : memo.type === 'event' ? 4 : 3}
             className="w-full rounded-[10px] bg-sheet border border-line px-3 py-2.5 text-sm leading-relaxed resize-none placeholder:text-char-mute"
           />
         </label>

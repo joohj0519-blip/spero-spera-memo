@@ -1,4 +1,5 @@
-export type MemoType = 'note' | 'checklist' | 'todo'
+// 'event'(일정): 날짜만 있는 일정. 시간·반복·알림 없음 — 캘린더에 올려 두는 용도
+export type MemoType = 'note' | 'checklist' | 'todo' | 'event'
 
 export interface ChecklistItem {
   id: string
@@ -43,4 +44,5 @@ export const MEMO_TYPE_META: Record<MemoType, { label: string; emoji: string; co
   note: { label: '메모', emoji: '📝', color: 'note' },
   checklist: { label: '체크리스트', emoji: '✅', color: 'check' },
   todo: { label: '할 일', emoji: '🎯', color: 'todo' },
+  event: { label: '일정', emoji: '📅', color: 'gold' },
 }
