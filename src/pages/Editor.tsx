@@ -2,9 +2,10 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { fileToDataUrl, getMemo, newId, saveMemo } from '../db'
 import type { Attachment, ChecklistItem, Memo, MemoType } from '../types'
-import { MEMO_TYPE_META } from '../types'
-import { TopBar } from '../components/TopBar'
-import { PaperclipIcon, PlusIcon, TrashIcon } from '../components/Icons'
+import { TYPE_THEME } from '../lib/theme'
+import { FolderStack, RoundButton, SectionLabel, Sheet } from '../components/Folder'
+import type { FolderDef } from '../components/Folder'
+import { BackIcon, CalendarIcon, PaperclipIcon, PinIcon, PlusIcon, TickIcon, TrashIcon } from '../components/Icons'
 import { notificationPermission, requestNotificationPermission } from '../lib/reminders'
 
 const empty = (type: MemoType): Memo => ({
@@ -19,13 +20,16 @@ const empty = (type: MemoType): Memo => ({
   updatedAt: Date.now(),
 })
 
-const TYPE_TABS: MemoType[] = ['note', 'checklist', 'todo']
-
-const TITLE_EN: Record<MemoType, string> = {
-  note: 'MEMO',
-  checklist: 'CHECKLIST',
-  todo: 'TO DO',
-}
+// 종류 고르기 탭 — 선택한 종류의 서류철이 맨 앞으로 온다. 탭 위치(x)는 고정.
+const TYPE_FOLDERS: FolderDef[] = (
+  [['todo', 250], ['note', 132], ['checklist', 14]] as Array<[MemoType, number]>
+).map(([type, x]) => ({
+  id: type,
+  label: TYPE_THEME[type].label,
+  color: TYPE_THEME[type].bg,
+  fg: TYPE_THEME[type].fg,
+  x,
+}))
 
 export default function Editor() {
   const { id } = useParams()
@@ -99,248 +103,241 @@ export default function Editor() {
   }
 
   if (!loaded) {
-    return <div className="p-8 text-ink-500">불러오는 중…</div>
+    return <div className="p-8 text-char-mute">불러오는 중…</div>
   }
 
+  const hasItems = memo.type === 'checklist' || memo.type === 'todo'
+  const checkedCount = memo.items.filter((i) => i.checked).length
+  const theme = TYPE_THEME[memo.type]
+
   return (
-    <div className="pb-40">
-      <TopBar
-        back
-        title={TITLE_EN[memo.type]}
-        right={
+    <Sheet
+      header={
+        <div className="px-4 pt-[26px] flex items-center justify-between gap-3">
+          <RoundButton label="뒤로" onClick={() => navigate(-1)}>
+            <BackIcon width={22} height={22} strokeWidth={2.2} />
+          </RoundButton>
+          <h1 className="m-0 text-lg font-extrabold">{id ? '고쳐 쓰기' : '새로 쓰기'}</h1>
           <button
+            type="button"
             onClick={onSave}
-            className="px-4 py-2 rounded-xl bg-ink-900 text-white text-sm font-semibold shadow-soft"
+            className="h-11 px-[18px] rounded-full bg-char text-paper text-sm font-bold"
           >
             저장
           </button>
-        }
-      />
-
-      {/* Type tabs — 3등분 */}
-      <div className="px-5 mt-4">
-        <div className="grid grid-cols-3 gap-2">
-          {TYPE_TABS.map((type) => {
-            const active = memo.type === type
-            const m = MEMO_TYPE_META[type]
-            return (
-              <button
-                key={type}
-                onClick={() => update('type', type)}
-                className={[
-                  'flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl border transition-colors',
-                  active
-                    ? type === 'note'
-                      ? 'bg-note-500 text-white border-note-500'
-                      : type === 'checklist'
-                        ? 'bg-check-500 text-white border-check-500'
-                        : 'bg-todo-500 text-white border-todo-500'
-                    : 'bg-white text-ink-700 border-ink-200/80 shadow-soft',
-                ].join(' ')}
-              >
-                <span aria-hidden className="text-base leading-none">{m.emoji}</span>
-                <span className="text-sm font-medium">{m.label}</span>
-              </button>
-            )
-          })}
         </div>
-      </div>
-
-      {/* Title */}
-      <div className="px-5 mt-10">
-        <input
-          value={memo.title}
-          onChange={(e) => update('title', e.target.value)}
-          placeholder="제목을 입력하세요"
-          className="w-full bg-transparent text-2xl font-semibold text-ink-900 placeholder:text-ink-400"
+      }
+      stack={
+        <FolderStack
+          label="종류 선택"
+          folders={TYPE_FOLDERS}
+          activeId={memo.type}
+          tabWidth={64}
+          frontStrip={14}
+          onSelect={(t) => update('type', t as MemoType)}
         />
-      </div>
+      }
+    >
+      <div className="px-5 pt-[18px] pb-8 flex flex-col">
+        {/* 제목 */}
+        <label className="flex flex-col gap-1.5">
+          <SectionLabel>제목</SectionLabel>
+          <input
+            value={memo.title}
+            onChange={(e) => update('title', e.target.value)}
+            placeholder="제목을 입력하세요"
+            className="h-[46px] bg-transparent border-b-2 border-char text-xl font-bold text-char placeholder:text-char-mute placeholder:font-medium"
+          />
+        </label>
 
-      {/* Date / Pin / Add item */}
-      <div className="px-5 mt-3 flex flex-wrap items-center gap-2">
-        <DateField
-          value={memo.dueDate}
-          onChange={(v) => {
-            update('dueDate', v)
-            if (v && (memo.type === 'todo' || memo.type === 'checklist')
-              && notificationPermission() === 'default') {
-              void requestNotificationPermission()
-            }
-          }}
-        />
-        <button
-          onClick={() => update('pinned', !memo.pinned)}
-          className={[
-            'ml-auto px-3 py-1.5 rounded-xl text-xs font-medium border transition-colors',
-            memo.pinned
-              ? 'bg-gold-100 text-gold-700 border-gold-200'
-              : 'bg-white text-ink-500 border-ink-200/80 shadow-soft',
-          ].join(' ')}
-        >
-          📌 {memo.pinned ? '고정됨' : '고정하기'}
-        </button>
-        <button
-          onClick={() => {
-            if (memo.type === 'note') {
-              update('type', 'checklist')
-              update('items', [...memo.items, { id: newId(), text: '', checked: false }])
-            } else {
-              addItem()
-            }
-          }}
-          className="px-3 py-1.5 rounded-xl text-xs font-medium border bg-white text-ink-700 border-ink-200/80 shadow-soft hover:bg-ink-900/[0.03] transition-colors"
-        >
-          ＋ 메모 추가
-        </button>
-      </div>
-
-      {/* Body */}
-      <div className="px-5 mt-4">
-        <textarea
-          value={memo.body}
-          onChange={(e) => update('body', e.target.value)}
-          placeholder={memo.type === 'note' ? '내용을 자유롭게 적어보세요…' : '메모 (선택)'}
-          rows={memo.type === 'note' ? 10 : 4}
-          className="w-full bg-white/70 rounded-xl p-4 shadow-soft border border-ink-200/80 text-[15px] leading-relaxed resize-none placeholder:text-ink-400"
-        />
-      </div>
-
-      {/* Checklist / Todo items */}
-      {(memo.type === 'checklist' || memo.type === 'todo') && (
-        <div className="px-5 mt-4">
-          <div className="rounded-xl bg-white shadow-soft border border-ink-200/80 p-3">
-            <div className="text-xs font-semibold text-ink-500 mb-2 px-2">
-              {memo.type === 'checklist' ? '체크리스트' : '세부 할 일'}
+        {/* 항목 (체크리스트·할 일) */}
+        {hasItems && (
+          <div className="mt-[18px] flex flex-col">
+            <div className="flex items-center justify-between">
+              <SectionLabel>{memo.type === 'checklist' ? '항목' : '세부 할 일'}</SectionLabel>
+              {memo.items.length > 0 && (
+                <span className="text-[11.5px] font-semibold text-terra-dark tabular-nums">
+                  {checkedCount} / {memo.items.length} 완료
+                </span>
+              )}
             </div>
-            {memo.items.map((item, idx) => (
-              <div key={item.id} className="flex items-center gap-2 px-1 py-1">
-                <button
-                  onClick={() => updateItem(idx, { checked: !item.checked })}
-                  className={[
-                    'w-5 h-5 rounded-md border-2 grid place-items-center shrink-0 transition-colors',
-                    item.checked
-                      ? 'bg-check-500 border-check-500 text-white'
-                      : 'border-ink-400 bg-white',
-                  ].join(' ')}
-                  aria-label="체크"
-                >
-                  {item.checked && (
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="m5 12 5 5L20 7" />
-                    </svg>
-                  )}
-                </button>
-                <input
-                  value={item.text}
-                  onChange={(e) => updateItem(idx, { text: e.target.value })}
-                  placeholder="항목 입력"
-                  className={[
-                    'flex-1 bg-transparent py-1.5',
-                    item.checked ? 'line-through text-ink-400' : 'text-ink-900',
-                  ].join(' ')}
+            {memo.items.length > 0 && (
+              <div aria-hidden className="mt-2 h-1 rounded-full bg-rule overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all"
+                  style={{ width: `${(checkedCount / memo.items.length) * 100}%`, background: theme.bg }}
                 />
-                <button
-                  onClick={() => removeItem(idx)}
-                  className="text-ink-400 hover:text-check-600 p-1"
-                  aria-label="삭제"
-                >
-                  <TrashIcon width={16} height={16} />
-                </button>
               </div>
-            ))}
-            <button
-              onClick={addItem}
-              className="mt-1 w-full flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm text-ink-500 hover:bg-ink-900/5"
-            >
-              <PlusIcon width={16} height={16} /> 항목 추가
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Attachments */}
-      <div className="px-5 mt-4">
-        <div className="rounded-xl bg-white shadow-soft border border-ink-200/80 p-3">
-          <div className="flex items-center justify-between mb-2 px-2">
-            <span className="text-xs font-semibold text-ink-500">첨부파일</span>
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="inline-flex items-center gap-1 text-xs text-ink-700 hover:text-ink-900 px-2 py-1 rounded-md hover:bg-ink-900/5"
-            >
-              <PaperclipIcon width={14} height={14} />
-              추가
-            </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              multiple
-              hidden
-              onChange={(e) => {
-                void onPickFiles(e.target.files)
-                e.target.value = ''
-              }}
-            />
-          </div>
-          {memo.attachments.length === 0 ? (
-            <p className="px-2 pb-1 text-xs text-ink-400">파일을 추가하면 여기에 표시됩니다 (개당 5MB 제한)</p>
-          ) : (
-            <ul className="space-y-1.5">
-              {memo.attachments.map((a) => (
-                <li
-                  key={a.id}
-                  className="flex items-center gap-2 px-2 py-2 rounded-xl bg-ink-900/[0.03]"
-                >
-                  {a.mime.startsWith('image/') ? (
-                    <img src={a.dataUrl} alt="" className="w-10 h-10 rounded-md object-cover" />
-                  ) : (
-                    <div className="w-10 h-10 rounded-md bg-white grid place-items-center text-ink-400">
-                      <PaperclipIcon />
-                    </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-ink-900 truncate">{a.name}</p>
-                    <p className="text-xs text-ink-400">{formatBytes(a.size)}</p>
-                  </div>
+            )}
+            <div className="mt-1 flex flex-col">
+              {/* 작성 화면에서는 입력하던 줄이 갑자기 움직이지 않도록, 체크해도 순서를 바꾸지 않는다 (아래로 내리는 정렬은 상세 화면에서만) */}
+              {memo.items.map((item, idx) => (
+                <div key={item.id} className="flex items-center gap-2.5 h-11 border-b border-rule">
                   <button
+                    type="button"
+                    onClick={() => updateItem(idx, { checked: !item.checked })}
+                    aria-label={item.checked ? '체크 해제' : '체크'}
+                    aria-pressed={item.checked}
+                    className={[
+                      'w-[22px] h-[22px] shrink-0 rounded-md grid place-items-center transition-colors',
+                      item.checked ? 'bg-terra text-face' : 'border-2 border-char-mute bg-sheet',
+                    ].join(' ')}
+                  >
+                    {item.checked && <TickIcon width={13} height={13} strokeWidth={3} />}
+                  </button>
+                  <input
+                    value={item.text}
+                    onChange={(e) => updateItem(idx, { text: e.target.value })}
+                    placeholder="항목 입력"
+                    aria-label="항목"
+                    className={[
+                      'flex-1 min-w-0 bg-transparent text-sm placeholder:text-char-mute',
+                      item.checked ? 'line-through text-char-mute' : 'text-char',
+                    ].join(' ')}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeItem(idx)}
+                    className="w-9 h-9 grid place-items-center text-char-mute hover:text-terra-dark"
+                    aria-label="항목 삭제"
+                  >
+                    <TrashIcon width={16} height={16} />
+                  </button>
+                </div>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={addItem}
+              className="mt-2.5 h-11 rounded-[10px] border-[1.5px] border-dashed border-ink-400 text-char-soft text-[13.5px] font-semibold flex items-center justify-center gap-1.5 hover:bg-sheet"
+            >
+              <PlusIcon width={16} height={16} strokeWidth={2.2} /> 항목 추가
+            </button>
+          </div>
+        )}
+
+        {/* 내용 */}
+        <label className="mt-4 flex flex-col gap-1.5">
+          <SectionLabel>{memo.type === 'note' ? '내용' : '메모'}</SectionLabel>
+          <textarea
+            value={memo.body}
+            onChange={(e) => update('body', e.target.value)}
+            placeholder={memo.type === 'note' ? '내용을 자유롭게 적어보세요…' : '메모 (선택)'}
+            rows={memo.type === 'note' ? 10 : 3}
+            className="w-full rounded-[10px] bg-sheet border border-line px-3 py-2.5 text-sm leading-relaxed resize-none placeholder:text-char-mute"
+          />
+        </label>
+
+        {/* 날짜 · 고정 · 첨부 */}
+        <div className="mt-3.5 grid grid-cols-3 gap-2">
+          <DateField
+            value={memo.dueDate}
+            onChange={(v) => {
+              update('dueDate', v)
+              if (v && (memo.type === 'todo' || memo.type === 'checklist')
+                && notificationPermission() === 'default') {
+                void requestNotificationPermission()
+              }
+            }}
+          />
+          <button
+            type="button"
+            aria-pressed={memo.pinned}
+            onClick={() => update('pinned', !memo.pinned)}
+            className={[
+              'h-12 rounded-[10px] border text-[12.5px] flex items-center justify-center gap-1.5 transition-colors',
+              memo.pinned ? 'bg-terra-tint border-terra/30 text-terra-ink font-bold' : 'bg-sheet border-line text-char font-semibold',
+            ].join(' ')}
+          >
+            <PinIcon width={17} height={17} /> {memo.pinned ? '고정됨' : '위에 고정'}
+          </button>
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="h-12 rounded-[10px] border border-line bg-sheet text-char text-[12.5px] font-semibold flex items-center justify-center gap-1.5"
+          >
+            <PaperclipIcon width={17} height={17} /> 파일 첨부
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            hidden
+            onChange={(e) => {
+              void onPickFiles(e.target.files)
+              e.target.value = ''
+            }}
+          />
+        </div>
+
+        {/* 첨부파일 목록 */}
+        {memo.attachments.length > 0 && (
+          <div className="mt-4 flex flex-col gap-2">
+            <SectionLabel>첨부 {memo.attachments.length}</SectionLabel>
+            <ul className="flex flex-col gap-1.5">
+              {memo.attachments.map((a) => (
+                <li key={a.id} className="flex items-center gap-2.5 h-[52px] pl-3 pr-1.5 rounded-[10px] bg-sheet border border-line">
+                  {a.mime.startsWith('image/') ? (
+                    <img src={a.dataUrl} alt="" className="w-8 h-8 rounded-lg object-cover shrink-0" />
+                  ) : (
+                    <span aria-hidden className="w-8 h-8 rounded-lg bg-sand-tint grid place-items-center shrink-0">
+                      <PaperclipIcon width={17} height={17} />
+                    </span>
+                  )}
+                  <span className="flex-1 min-w-0 truncate text-[13.5px] font-semibold">{a.name}</span>
+                  <span className="shrink-0 text-[11.5px] text-char-mute">{formatBytes(a.size)}</span>
+                  <button
+                    type="button"
                     onClick={() => removeAttachment(a.id)}
-                    className="text-ink-400 hover:text-check-600 p-1"
-                    aria-label="삭제"
+                    className="w-9 h-9 grid place-items-center text-char-mute hover:text-terra-dark"
+                    aria-label="첨부 삭제"
                   >
                     <TrashIcon width={16} height={16} />
                   </button>
                 </li>
               ))}
             </ul>
-          )}
-        </div>
+          </div>
+        )}
+        <p className="mt-3 text-[11.5px] text-char-mute">첨부는 파일 하나에 5MB까지 넣을 수 있어요.</p>
       </div>
-    </div>
+    </Sheet>
   )
 }
 
 function DateField({ value, onChange }: { value?: string; onChange: (v: string | undefined) => void }) {
+  // 날짜 칸 전체를 눌러도 달력이 열리도록, 실제 날짜 입력칸을 버튼 위에 투명하게 덮어 둔다
   return (
-    <label className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white shadow-soft border border-ink-200/80 text-sm text-ink-700 cursor-pointer">
-      <span>📅</span>
+    <div
+      className={[
+        'relative h-12 rounded-[10px] border text-[12.5px] flex items-center justify-center gap-1.5',
+        value ? 'bg-terra-tint border-terra/30 text-terra-ink font-bold' : 'bg-sheet border-line text-char font-semibold',
+      ].join(' ')}
+    >
+      <CalendarIcon aria-hidden width={17} height={17} />
+      <span>{value ? `${Number(value.slice(5, 7))}.${Number(value.slice(8, 10))}` : '날짜'}</span>
       <input
         type="date"
         value={value ?? ''}
+        aria-label="날짜"
         onChange={(e) => onChange(e.target.value || undefined)}
-        className="bg-transparent outline-none"
+        onClick={(e) => {
+          // 일부 브라우저는 투명한 입력칸을 눌러도 달력이 안 열려서 직접 열어 준다
+          try { e.currentTarget.showPicker?.() } catch { /* 지원하지 않는 브라우저는 기본 동작에 맡김 */ }
+        }}
+        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
       />
       {value && (
         <button
           type="button"
-          onClick={(e) => {
-            e.preventDefault()
-            onChange(undefined)
-          }}
-          className="text-ink-400 hover:text-check-600 ml-1 text-xs"
+          onClick={() => onChange(undefined)}
+          aria-label="날짜 지우기"
+          className="relative z-10 w-6 h-6 grid place-items-center text-xs"
         >
           ✕
         </button>
       )}
-    </label>
+    </div>
   )
 }
 

@@ -1,5 +1,13 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+// 글꼴을 앱 안에 함께 넣어 둔다 (외부 사이트에서 불러오지 않으므로 인터넷이 느리거나 끊겨도 글자 모양이 유지됨)
+import '@fontsource/montserrat/400.css'
+import '@fontsource/montserrat/500.css'
+import '@fontsource/montserrat/600.css'
+import '@fontsource/montserrat/700.css'
+import '@fontsource/montserrat/800.css'
+import '@fontsource/shantell-sans/700.css'
+import '@fontsource/shantell-sans/800.css'
 import './index.css'
 import App from './App.tsx'
 

@@ -102,6 +102,58 @@ export const PaperclipIcon = (p: SVGProps<SVGSVGElement>) => (
   </svg>
 )
 
+export const EditIcon = (p: SVGProps<SVGSVGElement>) => (
+  <svg {...base} {...p}>
+    <path d="M4 20h4L19 9l-4-4L4 16z" />
+  </svg>
+)
+
+export const FileIcon = (p: SVGProps<SVGSVGElement>) => (
+  <svg {...base} {...p}>
+    <path d="M7 3h8l4 4v14H7z" />
+    <path d="M15 3v4h4" />
+  </svg>
+)
+
+export const SyncIcon = (p: SVGProps<SVGSVGElement>) => (
+  <svg {...base} {...p}>
+    <path d="M20 12a8 8 0 0 1-14 5M4 12a8 8 0 0 1 14-5" />
+    <path d="M18 3v4h-4M6 21v-4h4" />
+  </svg>
+)
+
+export const BellIcon = (p: SVGProps<SVGSVGElement>) => (
+  <svg {...base} {...p}>
+    <path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z" />
+    <path d="M10 20a2 2 0 0 0 4 0" />
+  </svg>
+)
+
+export const DownloadIcon = (p: SVGProps<SVGSVGElement>) => (
+  <svg {...base} {...p}>
+    <path d="M12 4v11M7 11l5 5 5-5M5 20h14" />
+  </svg>
+)
+
+export const AppIcon = (p: SVGProps<SVGSVGElement>) => (
+  <svg {...base} {...p}>
+    <rect x="4" y="5" width="16" height="12" rx="2" />
+    <path d="M9 21h6M12 17v4" />
+  </svg>
+)
+
+export const NextIcon = (p: SVGProps<SVGSVGElement>) => (
+  <svg {...base} {...p}>
+    <path d="m9 6 6 6-6 6" />
+  </svg>
+)
+
+export const TickIcon = (p: SVGProps<SVGSVGElement>) => (
+  <svg {...base} {...p}>
+    <path d="m5 12 5 5L20 7" />
+  </svg>
+)
+
 export const TypeIconFor = ({ type, ...p }: { type: 'note' | 'checklist' | 'todo' } & SVGProps<SVGSVGElement>) => {
   if (type === 'note') return <NoteIcon {...p} />
   if (type === 'checklist') return <CheckIcon {...p} />

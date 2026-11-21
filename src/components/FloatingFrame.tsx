@@ -64,7 +64,7 @@ export function FloatingFrame({ children }: { children: ReactNode }) {
   //          100vh 는 실제 보이는 높이보다 커져서 네비 아랫부분이 잘리기 때문
   if (!isDesktop || isStandalone) {
     return (
-      <div className="h-dvh flex flex-col max-w-[485px] mx-auto w-full">
+      <div className="h-dvh flex flex-col max-w-[485px] mx-auto w-full bg-face">
         <ReminderBanner />
         {/* min-h-0 필수: flex 자식의 기본값 min-height:auto 때문에 스크롤이 안 잡히는 문제 방지 */}
         <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain flex flex-col">
@@ -82,8 +82,8 @@ export function FloatingFrame({ children }: { children: ReactNode }) {
         transform: `translate(${pos.x}px, ${pos.y}px)`,
         width: FRAME_W,
         height: `min(${FRAME_H}px, calc(100vh - 32px))`,
-        background:
-          'linear-gradient(180deg, #F4F1EA 0%, #EFEADF 60%, #E3DBCE 100%)',
+        // 창 바탕 = 서류철 면 색 (각 화면 위쪽 제목 영역만 크림색을 따로 칠함)
+        background: '#FBF6EC',
       }}
     >
       <div
@@ -91,10 +91,10 @@ export function FloatingFrame({ children }: { children: ReactNode }) {
         onPointerMove={onMove}
         onPointerUp={onUp}
         onPointerCancel={onUp}
-        className="shrink-0 h-7 grid place-items-center cursor-grab active:cursor-grabbing select-none touch-none"
+        className="shrink-0 h-7 grid place-items-center bg-paper cursor-grab active:cursor-grabbing select-none touch-none"
         title="드래그해서 이동"
       >
-        <div className="w-10 h-1 rounded-full bg-ink-400/30" />
+        <div className="w-10 h-1 rounded-full bg-char/20" />
       </div>
       <ReminderBanner />
       <div className="flex-1 overflow-y-auto overscroll-contain flex flex-col">

@@ -4,7 +4,10 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['"Pretendard Variable"', 'Pretendard', '"Noto Sans KR"', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],
+        // 영문·숫자는 Montserrat, 한글은 Pretendard 로 표시 (앞에 적은 글꼴에 없는 글자는 뒤 글꼴이 맡음)
+        sans: ['Montserrat', '"Pretendard Variable"', 'Pretendard', '"Noto Sans KR"', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],
+        // 손글씨풍 제목용
+        hand: ['"Shantell Sans"', 'Fredoka', 'Montserrat', 'sans-serif'],
       },
       borderRadius: {
         // 프레임 둥글기 ~5% 톤으로 다운
@@ -13,6 +16,16 @@ export default {
         '3xl': '1.125rem',  // 18px (was 24px)
       },
       colors: {
+        // ── 2026-11 서류철(폴더) 디자인 팔레트 ──
+        paper: '#F3EBDD',   // 화면 바탕(크림)
+        face: '#FBF6EC',    // 맨 앞 서류철의 면 (속지 바탕)
+        sheet: '#FFFDF8',   // 카드·목록 줄 바탕
+        line: '#DDCFB8',    // 테두리
+        rule: '#E6DAC6',    // 옅은 구분선
+        char: { DEFAULT: '#2B2A28', soft: '#55504A', mute: '#6B5F52' }, // 글자(차콜)
+        terra: { DEFAULT: '#A84E2A', light: '#BF5B34', dark: '#8F3F1F', tint: '#F2C9B5', ink: '#7A3518' }, // 체크리스트
+        sage: { DEFAULT: '#9AA58C', dark: '#7D8B6C', tint: '#E6EADF', ink: '#3F4A36' },                   // 할 일
+        sand: { DEFAULT: '#E0CDB0', tint: '#EFE4D0' },                                                    // 메모
         // ── Vintage Earthy 팔레트 (디자인톤 #2 / cindyroamingdesigns) ──
         // 중립(텍스트·테두리) — 따뜻한 에스프레소~아이보리. 기존 slate 계열을 대체.
         ink: {

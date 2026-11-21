@@ -49,21 +49,21 @@
     font-kerning: normal;
   }
   body {
-    @apply font-sans text-ink-900 antialiased;
-    /* 무드 — 빈티지 어시(earthy) 톤, 따뜻한 실크 아이보리 그라데이션 */
-    background: linear-gradient(180deg, #F4F1EA 0%, #EFEADF 50%, #E3DBCE 100%);
-    background-attachment: fixed;
+    @apply font-sans text-char antialiased;
+    /* 바탕은 '맨 앞 서류철의 면' 색. 각 화면 위쪽(제목 영역)만 크림색을 따로 칠한다.
+       → 화면 아래쪽과 하단 메뉴가 한 장의 서류철 면처럼 이어져 보이게 하려는 것 */
+    background: #FBF6EC;
   }
   @media (min-width: 1024px) {
     body {
-      /* 데스크톱 "데스크" — 차분한 엠버/올리브 무드 */
-      background: radial-gradient(1200px 800px at 30% 20%, #E7DCCB 0%, #DDD0BC 38%, #CDBEA6 100%);
+      /* 데스크톱: 떠 있는 메모 창 뒤의 책상 바탕 */
+      background: radial-gradient(1200px 800px at 30% 20%, #EFE4D0 0%, #E6D5BA 45%, #D9C4A3 100%);
     }
   }
-  /* PWA standalone (별도 창으로 설치되어 실행 중) — 안쪽 아이보리 그라데이션 */
+  /* 별도 창으로 설치해 실행 중일 때는 창 전체가 메모 화면 */
   @media all and (display-mode: standalone) {
     body {
-      background: linear-gradient(180deg, #F4EFE6 0%, #F8F4EC 28%, #FBF9F3 100%) !important;
+      background: #FBF6EC !important;
     }
   }
   button {
@@ -78,4 +78,53 @@
   .scrollbar-hide::-webkit-scrollbar { display: none; }
   .scrollbar-hide { scrollbar-width: none; }
   .safe-bottom { padding-bottom: max(env(safe-area-inset-bottom), 1rem); }
+}
+
+/* ───────── 홈 화면 빛 효과 (주황 서류철) ─────────
+   둥근 빛이 서류철 윤곽을 따라 일정한 속도로 이동하다가, 끝 지점에서 '그 빛 자신이' 폭죽처럼 터지며 사라진다.
+   한 주기 9초 — 0~34%: 이동 / 34%: 도착 / 34~38%: 빛이 커지며 흩어짐 + 같은 색 불씨가 사방으로 튐 / 나머지: 쉼
+   - 이동하던 빛을 먼저 끄지 않고 그대로 부풀려 터뜨리고, 불씨도 같은 색·같은 위치에서 출발시켜 하나로 이어져 보이게 함 */
+@keyframes orb-run {
+  0% { offset-distance: 0%; opacity: 0; transform: scale(1); }
+  3% { opacity: 1; }
+  34% { offset-distance: 100%; opacity: 1; transform: scale(1); }
+  35.2% { offset-distance: 100%; opacity: 1; transform: scale(1.8); }
+  38.5% { offset-distance: 100%; opacity: 0; transform: scale(2.5); }
+  100% { offset-distance: 100%; opacity: 0; transform: scale(2.5); }
+}
+@keyframes orb-pulse { 0%, 100% { transform: scale(0.8); } 50% { transform: scale(1.2); } }
+@keyframes spark-far {
+  0%, 34.4% { transform: translateX(0) scale(1); opacity: 0; }
+  34.8% { transform: translateX(3px) scale(1); opacity: 1; }
+  41% { transform: translateX(27px) scale(0.75); opacity: 0.95; }
+  47%, 100% { transform: translateX(33px) scale(0.2); opacity: 0; }
+}
+@keyframes spark-near {
+  0%, 34.4% { transform: translateX(0) scale(1); opacity: 0; }
+  34.8% { transform: translateX(2px) scale(1); opacity: 1; }
+  40% { transform: translateX(17px) scale(0.7); opacity: 0.9; }
+  45%, 100% { transform: translateX(21px) scale(0.2); opacity: 0; }
+}
+.orb {
+  position: absolute; left: 0; top: 0; width: 30px; height: 30px; border-radius: 50%;
+  pointer-events: none; offset-rotate: 0deg; opacity: 0;
+  background: radial-gradient(circle, rgba(255,248,238,.95) 0%, rgba(255,224,196,.8) 18%, rgba(255,190,146,.42) 40%, rgba(255,176,128,.14) 58%, rgba(255,176,128,0) 72%);
+  animation: orb-run 9s linear infinite;
+}
+/* 가운데 밝은 심지 — 숨쉬듯 커졌다 작아져서 '기어가는 점'처럼 보이지 않게 함 */
+.orb::after {
+  content: ""; position: absolute; left: 11px; top: 11px; width: 8px; height: 8px; border-radius: 50%;
+  background: #FFFDF8; box-shadow: 0 0 6px 2px rgba(255,236,214,.9);
+  animation: orb-pulse 1.4s ease-in-out infinite;
+}
+.spark {
+  position: absolute; left: -2.5px; top: -2.5px; width: 5px; height: 5px; border-radius: 50%;
+  background: #FFF6EA; box-shadow: 0 0 5px 2px rgba(255,200,160,.85); opacity: 0;
+  animation: spark-far 9s cubic-bezier(.15,.7,.3,1) infinite;
+}
+.spark.near { width: 4px; height: 4px; left: -2px; top: -2px; animation-name: spark-near; }
+/* 기기에서 '움직임 줄이기'를 켠 경우 효과를 끔 */
+@media (prefers-reduced-motion: reduce) {
+  .orb, .orb::after, .spark { animation: none; }
+  .orb, .spark { opacity: 0; }
 }

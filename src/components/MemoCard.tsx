@@ -1,185 +1,73 @@
 import { Link } from 'react-router-dom'
-import { format, isToday, isTomorrow, isYesterday, parseISO } from 'date-fns'
-import { ko } from 'date-fns/locale'
-import type { Memo, MemoType } from '../types'
-import { MEMO_TYPE_META } from '../types'
-import { PaperclipIcon } from './Icons'
+import { format, parseISO } from 'date-fns'
+import type { Memo } from '../types'
+import { isCompleted } from '../db'
+import { TYPE_THEME, daysOverdue } from '../lib/theme'
+import { PinIcon, TickIcon } from './Icons'
 
-function dueLabel(d?: string) {
-  if (!d) return null
-  const date = parseISO(d)
-  if (isToday(date)) return '오늘'
-  if (isTomorrow(date)) return '내일'
-  if (isYesterday(date)) return '어제'
-  return format(date, 'M월 d일 (eee)', { locale: ko })
-}
+/**
+ * 목록의 메모 한 줄.
+ * - 진행 중: 왼쪽에 종류 색 칸 + 아이콘, 오른쪽에 진행(2/5)·마감 표시
+ * - 완료: 흐리게, 줄을 그어 표시 (목록 아래쪽 '완료' 묶음에 놓인다)
+ * 예전에는 카드형/줄형 두 가지였지만 새 디자인에서는 이 한 가지 모양만 쓴다.
+ */
+export function MemoCard({ memo }: { memo: Memo }) {
+  const t = TYPE_THEME[memo.type]
+  const done = isCompleted(memo)
 
-const palette: Record<MemoType, {
-  card: string
-  iconBg: string
-  iconRing: string
-  bar: string
-  barTrack: string
-  emoji: string
-}> = {
-  note: {
-    card: 'bg-note-50/80',
-    iconBg: 'bg-note-200',
-    iconRing: 'ring-note-300/60',
-    bar: 'bg-note-500',
-    barTrack: 'bg-note-100',
-    emoji: '📝',
-  },
-  checklist: {
-    card: 'bg-check-50/80',
-    iconBg: 'bg-check-200',
-    iconRing: 'ring-check-300/60',
-    bar: 'bg-check-500',
-    barTrack: 'bg-check-100',
-    emoji: '✅',
-  },
-  todo: {
-    card: 'bg-todo-50/80',
-    iconBg: 'bg-todo-200',
-    iconRing: 'ring-todo-300/60',
-    bar: 'bg-todo-500',
-    barTrack: 'bg-todo-100',
-    emoji: '🎯',
-  },
-}
-
-export type MemoCardVariant = 'card' | 'line'
-
-export function MemoCard({ memo, variant = 'card' }: { memo: Memo; variant?: MemoCardVariant }) {
-  const meta = MEMO_TYPE_META[memo.type]
-  const c = palette[memo.type]
-  const due = dueLabel(memo.dueDate)
-  const overdue = memo.dueDate && parseISO(memo.dueDate) < new Date(new Date().toDateString())
-
-  const checklistDone = memo.type === 'checklist'
-    ? memo.items.filter((i) => i.checked).length
-    : 0
-  const checklistTotal = memo.type === 'checklist' ? memo.items.length : 0
-  const checklistPct = checklistTotal > 0 ? (checklistDone / checklistTotal) * 100 : 0
-
-  if (variant === 'line') {
+  if (done) {
     return (
       <Link
         to={`/memo/${memo.id}`}
-        className={[
-          'group flex items-center gap-1.5 rounded-lg border border-ink-200/80 shadow-soft hover:shadow-card transition-shadow pl-1.5 pr-2.5 py-1 overflow-hidden',
-          c.card,
-        ].join(' ')}
+        className="flex items-center gap-2.5 h-10 pl-2 pr-3 rounded-[10px] bg-paper text-char-mute"
       >
-        <span className={['w-1 h-4 rounded-full shrink-0', c.bar].join(' ')} aria-hidden />
-        <div
-          className={[
-            'shrink-0 grid place-items-center w-5 h-5 rounded ring-1 text-[10px] leading-none',
-            c.iconBg,
-            c.iconRing,
-          ].join(' ')}
-        >
-          <span aria-hidden>{c.emoji}</span>
-        </div>
-        <div className="flex-1 min-w-0 inline-flex items-center gap-1.5">
-          {memo.pinned && <span className="text-gold-500 text-[10px] shrink-0">📌</span>}
-          <span className="text-[13px] leading-5 font-medium text-ink-900 truncate">
-            {memo.title || '제목 없음'}
-          </span>
-          {memo.type === 'todo' && memo.done && (
-            <span className="shrink-0 text-[10px] text-note-700 font-medium">✓</span>
-          )}
-          {memo.type === 'checklist' && checklistTotal > 0 && (
-            <span className="shrink-0 text-[10px] text-ink-400 tabular-nums">
-              {checklistDone}/{checklistTotal}
-            </span>
-          )}
-        </div>
-        {due && (
-          <span
-            className={[
-              'shrink-0 text-[11px] tabular-nums',
-              overdue && !memo.done ? 'text-check-600 font-medium' : 'text-ink-500',
-            ].join(' ')}
-          >
-            {due}
-          </span>
-        )}
+        <span aria-hidden className="w-6 h-6 shrink-0 rounded-full bg-[#D9CDB9] grid place-items-center text-char-soft">
+          <TickIcon width={13} height={13} strokeWidth={2.6} />
+        </span>
+        <span className="flex-1 min-w-0 truncate text-[13px] font-medium line-through">
+          {memo.title || '제목 없음'}
+        </span>
+        <span className="shrink-0 text-[10.5px] font-semibold">완료</span>
       </Link>
     )
   }
 
+  const checkedCount = memo.items.filter((i) => i.checked).length
+  const over = daysOverdue(memo)
+  // 마감 표시: 지남(진한 주황) / 오늘(연한 주황) / 앞으로(연한 초록, 날짜만)
+  // 일반 메모는 '끝내야 하는 일'이 아니라서 지남·마감 대신 날짜만 보여 준다
+  const dateOnly = memo.dueDate ? { text: format(parseISO(memo.dueDate), 'M.d'), cls: 'bg-sage-tint text-sage-ink' } : null
+  const due =
+    over === null ? null
+      : memo.type === 'note' ? dateOnly
+        : over > 0 ? { text: `${over}일 지남`, cls: 'bg-terra text-face' }
+          : over === 0 ? { text: '오늘 마감', cls: 'bg-terra-tint text-terra-ink' }
+            : dateOnly
+
   return (
     <Link
       to={`/memo/${memo.id}`}
-      className={[
-        'group block rounded-xl shadow-soft hover:shadow-card transition-shadow border border-ink-200/80 overflow-hidden',
-        c.card,
-      ].join(' ')}
+      className="flex items-center gap-2.5 h-[46px] pr-3 rounded-[10px] bg-sheet border border-line overflow-hidden text-char hover:border-char/40 transition-colors"
     >
-      <div className="p-3.5">
-        <div className="flex items-start gap-3">
-          <div
-            className={[
-              'shrink-0 grid place-items-center w-14 h-14 rounded-xl text-2xl ring-1',
-              c.iconBg,
-              c.iconRing,
-            ].join(' ')}
-          >
-            <span aria-hidden>{c.emoji}</span>
-          </div>
-
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1.5">
-              <span className="text-[11px] font-medium text-ink-500">{meta.label}</span>
-              {memo.pinned && <span className="text-gold-500 text-xs">📌</span>}
-            </div>
-            <h3 className="mt-0.5 font-semibold text-ink-900 truncate">
-              {memo.title || '제목 없음'}
-            </h3>
-            {memo.body && (
-              <p className="mt-1 text-sm text-ink-500 line-clamp-2 whitespace-pre-line">
-                {memo.body}
-              </p>
-            )}
-
-            <div className="mt-2 flex items-center gap-3 text-xs text-ink-500">
-              {due && (
-                <span className={['inline-flex items-center gap-1', overdue && !memo.done ? 'text-check-600 font-medium' : ''].join(' ')}>
-                  📅 {due}
-                </span>
-              )}
-              {memo.attachments.length > 0 && (
-                <span className="inline-flex items-center gap-1">
-                  <PaperclipIcon width={12} height={12} />
-                  {memo.attachments.length}
-                </span>
-              )}
-              {memo.type === 'todo' && memo.done && (
-                <span className="inline-flex items-center gap-1 text-note-700 font-medium">✓ 완료</span>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Progress bar — checklist 진행률 또는 type 별 액센트 라인 */}
-        {memo.type === 'checklist' && checklistTotal > 0 ? (
-          <div className="mt-3">
-            <div className="flex items-center justify-between text-[11px] text-ink-500 mb-1">
-              <span>{checklistDone} / {checklistTotal}</span>
-              <span className="font-semibold">{Math.round(checklistPct)}%</span>
-            </div>
-            <div className={['h-1.5 rounded-full overflow-hidden', c.barTrack].join(' ')}>
-              <div
-                className={['h-full transition-all', c.bar].join(' ')}
-                style={{ width: `${checklistPct}%` }}
-              />
-            </div>
-          </div>
-        ) : (
-          <div className={['mt-3 h-1 rounded-full', c.bar, 'opacity-70'].join(' ')} />
-        )}
-      </div>
+      <span
+        aria-hidden
+        className="w-[34px] self-stretch shrink-0 grid place-items-center"
+        style={{ background: t.bg, color: t.fg }}
+      >
+        <t.Icon width={17} height={17} />
+      </span>
+      <span className="flex-1 min-w-0 truncate text-[13.5px] font-semibold">{memo.title || '제목 없음'}</span>
+      {memo.pinned && <PinIcon aria-label="고정됨" width={15} height={15} className="shrink-0 text-terra-light" />}
+      {memo.items.length > 0 && (
+        <span className="shrink-0 px-2 py-[3px] rounded-full bg-sand-tint text-char-soft text-[10.5px] font-bold tabular-nums">
+          {checkedCount}/{memo.items.length}
+        </span>
+      )}
+      {due && (
+        <span className={['shrink-0 px-2 py-[3px] rounded-full text-[10.5px] font-bold tabular-nums', due.cls].join(' ')}>
+          {due.text}
+        </span>
+      )}
     </Link>
   )
 }

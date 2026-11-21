@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 import { listMemos, listVisibleMemos } from '../db'
 import type { Memo } from '../types'
-import { MEMO_TYPE_META } from '../types'
-import { TopBar } from '../components/TopBar'
+import { TYPE_THEME, FACE, CHAR } from '../lib/theme'
+import { Brand, FolderStack, Sheet } from '../components/Folder'
+import { AppIcon, BellIcon, DownloadIcon, SyncIcon } from '../components/Icons'
+import type { ComponentType, ReactNode, SVGProps } from 'react'
 import { useInstallPrompt, useStandalone } from '../hooks/usePwa'
 import {
   ensureInit,
@@ -120,220 +122,235 @@ export default function Profile() {
   const remoteFileId = getRemoteFileId()
   const origin = typeof window !== 'undefined' ? window.location.origin : ''
 
+  const OK = 'bg-sage-tint text-sage-ink'
+  const OFF = 'bg-sand-tint text-char-soft'
+  const WARN = 'bg-terra-tint text-terra-ink'
+  const PRIMARY = 'mt-2.5 w-full h-11 rounded-[10px] bg-char text-paper text-[13.5px] font-bold disabled:opacity-60'
+  const OUTLINE = 'mt-2.5 w-full h-11 rounded-[10px] border-[1.5px] border-char text-char text-[13.5px] font-bold'
+
   return (
-    <div className="pb-32">
-      <TopBar title="spero spera" subtitle="dum spiro, spero · 숨쉬는 한, 희망한다" />
-
-      {!isStandalone && (
-        <section className="px-5">
-          <div className="rounded-xl bg-gradient-to-br from-todo-50 to-todo-100 border border-ink-200/80 shadow-soft p-5">
-            <p className="text-xs font-semibold text-todo-700 mb-1">PC 데스크톱 앱처럼 사용하기</p>
-            <h3 className="text-base font-semibold text-ink-900">앱으로 설치</h3>
-            <p className="mt-1 text-sm text-ink-700 leading-relaxed">
-              브라우저 창이 아닌 <b>별도의 작은 창</b>으로 떠서 다른 작업과 함께 쓸 수 있어요.
-              화면 한쪽에 두고 메모만 띄워두기 좋아요.
-            </p>
-            {installed ? (
-              <p className="mt-3 text-sm text-note-600 font-semibold">설치 완료 — 시작 메뉴에서 열어보세요.</p>
-            ) : canInstall ? (
-              <button
-                onClick={() => void install()}
-                className="mt-3 w-full px-4 py-3 rounded-xl bg-ink-900 text-white font-medium"
-              >
-                바로 설치하기
-              </button>
-            ) : (
-              <details className="mt-3 text-sm text-ink-700">
-                <summary className="cursor-pointer font-medium">수동 설치 방법 보기</summary>
-                <ul className="mt-2 space-y-1.5 pl-4 list-disc text-ink-700">
-                  <li><b>Chrome / Edge (PC)</b>: 주소창 오른쪽 끝의 <b>설치</b> 아이콘 클릭, 또는 메뉴 → "앱 설치"</li>
-                  <li><b>Safari (iPhone)</b>: 공유 → "홈 화면에 추가"</li>
-                  <li><b>Chrome (Android)</b>: 메뉴 → "앱 설치" / "홈 화면에 추가"</li>
-                </ul>
-                <p className="mt-2 text-xs text-ink-500">
-                  ※ 빌드 후 https 또는 GitHub Pages 에 배포된 환경에서 더 잘 동작해요.
-                </p>
-              </details>
-            )}
+    <Sheet
+      header={
+        <div className="px-5 pt-[30px] flex flex-col gap-[3px]">
+          <Brand />
+          <h1 className="m-0 text-[26px] leading-[1.1] font-extrabold">
+            프로필 <span className="text-[13px] font-semibold text-char-mute">dum spiro, spero</span>
+          </h1>
+        </div>
+      }
+      stack={
+        <FolderStack
+          label="설정"
+          folders={[{ id: 'settings', label: '설정', color: FACE, fg: CHAR, x: 14 }]}
+          activeId="settings"
+          tabWidth={50}
+          frontStrip={6}
+        />
+      }
+    >
+      <div className="px-4 pt-2 pb-5 flex flex-col gap-2">
+        {/* 요약 띠 */}
+        <div className="grid grid-cols-2 h-[58px] rounded-xl bg-char">
+          <div className="flex flex-col items-center justify-center gap-0.5">
+            <div className="text-[17px] font-bold leading-none text-paper tabular-nums">{memos.length}</div>
+            <div className="text-[10.5px] text-[#D9CDB9]">총 메모</div>
           </div>
-        </section>
-      )}
-
-
-      <section className="px-5">
-        <div className="rounded-xl bg-white shadow-soft border border-ink-200/80 p-5">
-          <p className="text-sm text-ink-500">총 메모</p>
-          <p className="text-3xl font-semibold text-ink-900">{memos.length}</p>
-          <div className="mt-4 grid grid-cols-3 gap-3 text-center">
-            {(Object.keys(counts) as Array<keyof typeof counts>).map((k) => (
-              <div key={k} className="rounded-xl bg-ink-900/[0.03] p-3">
-                <p className="text-xs text-ink-500">{MEMO_TYPE_META[k].label}</p>
-                <p className="text-xl font-semibold text-ink-900">{counts[k]}</p>
-              </div>
-            ))}
+          <div className="flex flex-col items-center justify-center gap-0.5 border-l border-char-soft">
+            <div className="text-[17px] font-bold leading-none text-paper tabular-nums">
+              {totalAttachments}개 · {formatBytes(totalBytes)}
+            </div>
+            <div className="text-[10.5px] text-[#D9CDB9]">첨부파일</div>
           </div>
         </div>
-      </section>
-
-      <section className="px-5 mt-4">
-        <div className="rounded-xl bg-white shadow-soft border border-ink-200/80 p-5">
-          <p className="text-sm text-ink-500">첨부파일</p>
-          <p className="text-2xl font-semibold text-ink-900">
-            {totalAttachments}<span className="text-base text-ink-500 font-medium ml-1">개</span>
-          </p>
-          <p className="mt-1 text-xs text-ink-400">
-            로컬 저장 용량 약 {formatBytes(totalBytes)}
-          </p>
-        </div>
-      </section>
-
-      <section className="px-5 mt-4">
-        <div className="rounded-xl bg-white shadow-soft border border-ink-200/80 p-5 space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-ink-900">Google Drive 동기화</h3>
-            {drive.signedIn ? (
-              <span className="text-[11px] text-note-600 font-medium inline-flex items-center gap-1">
-                <span className="w-1.5 h-1.5 bg-note-500 rounded-full" />
-                {sync.status === 'syncing' ? '동기화 중…' : '연결됨 · 자동 동기화'}
+        <div className="grid grid-cols-3 gap-2">
+          {(Object.keys(counts) as Array<keyof typeof counts>).map((k) => (
+            <div key={k} className="h-[52px] rounded-[10px] bg-sheet border border-line flex items-center gap-2 px-2.5">
+              <span aria-hidden className="w-2 h-7 rounded-full" style={{ background: TYPE_THEME[k].bg }} />
+              <span className="flex flex-col min-w-0">
+                <span className="text-[11px] text-char-mute truncate">{TYPE_THEME[k].label}</span>
+                <span className="text-[15px] font-bold leading-tight tabular-nums">{counts[k]}</span>
               </span>
-            ) : (
-              <span className="text-[11px] text-ink-400">미연결</span>
-            )}
-          </div>
-          <p className="text-xs text-ink-500 leading-relaxed">
+            </div>
+          ))}
+        </div>
+
+        {/* Google Drive 동기화 */}
+        <Card
+          Icon={SyncIcon}
+          title="Google Drive 동기화"
+          status={
+            drive.signedIn
+              ? <Chip cls={OK}>{sync.status === 'syncing' ? '동기화 중…' : '연결됨 · 자동'}</Chip>
+              : <Chip cls={OFF}>미연결</Chip>
+          }
+        >
+          <p className="mt-2 mb-0 text-xs leading-[1.55] text-char-soft">
             본인 Drive 의 <b>앱 전용 폴더</b>에 메모가 저장돼요. 노트북·휴대폰 어디서든 <b>같은 계정</b>으로 로그인하면
             메모 저장·앱 시작·5분 간격 등 자동으로 동기화됩니다.
           </p>
 
           {!drive.ready ? (
-            <p className="text-xs text-ink-400">Google API 로딩 중…</p>
+            <p className="mt-2 mb-0 text-xs text-char-mute">Google API 로딩 중…</p>
           ) : !drive.signedIn ? (
-            <button
-              onClick={() => void handleSignIn()}
-              className="w-full px-4 py-3 rounded-xl bg-ink-900 text-white font-medium"
-            >
+            <button type="button" onClick={() => void handleSignIn()} className={PRIMARY}>
               Google 계정으로 연결
             </button>
           ) : (
-            <div className="space-y-2">
+            <>
               {drive.user?.email && (
-                <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-ink-900/[0.03] text-xs">
+                <div className="mt-2.5 flex items-center gap-2 px-3 h-10 rounded-[10px] bg-sand-tint text-xs">
                   {drive.user.picture && (
                     <img src={drive.user.picture} alt="" className="w-6 h-6 rounded-full" />
                   )}
                   <span className="flex-1 truncate">
-                    <b className="text-ink-900">{drive.user.email}</b>
-                    {drive.user.name && <span className="text-ink-500"> · {drive.user.name}</span>}
+                    <b>{drive.user.email}</b>
+                    {drive.user.name && <span className="text-char-soft"> · {drive.user.name}</span>}
                   </span>
                 </div>
               )}
-              <button
-                onClick={() => void handleSync()}
-                disabled={sync.status === 'syncing'}
-                className="w-full px-4 py-3 rounded-xl bg-ink-900 text-white font-medium disabled:opacity-60"
-              >
-                {sync.status === 'syncing' ? '동기화 중…' : '지금 강제 동기화'}
+              <button type="button" onClick={() => void handleSync()} disabled={sync.status === 'syncing'} className={PRIMARY}>
+                {sync.status === 'syncing' ? '동기화 중…' : '지금 동기화'}
               </button>
-              <div className="flex items-center justify-between text-[11px] text-ink-500">
+              <div className="mt-2 flex items-center justify-between text-[11px] text-char-mute">
                 <span>
                   {sync.lastAt
                     ? `마지막 동기화: ${format(new Date(sync.lastAt), 'M월 d일 HH:mm:ss', { locale: ko })}`
                     : '아직 동기화 안 됨'}
                 </span>
-                <button
-                  onClick={handleSignOut}
-                  className="text-ink-500 hover:text-check-600"
-                >
+                <button type="button" onClick={handleSignOut} className="py-1.5 underline hover:text-terra-dark">
                   연결 해제
                 </button>
               </div>
-            </div>
+            </>
           )}
 
           {sync.lastError && (
-            <div className="text-xs text-check-600 bg-check-50 border border-check-100 rounded-lg p-2">
-              <p className="font-medium">⚠ 마지막 동기화 오류</p>
-              <p className="mt-1 break-words">{sync.lastError}</p>
+            <div className="mt-2 text-xs text-terra-ink bg-terra-tint rounded-lg p-2">
+              <p className="m-0 font-bold">마지막 동기화 오류</p>
+              <p className="mt-1 mb-0 break-words">{sync.lastError}</p>
             </div>
           )}
           {drive.signInError && (
-            <p className="text-xs text-check-600">⚠ 로그인 오류: {drive.signInError}</p>
+            <p className="mt-2 mb-0 text-xs text-terra-dark">로그인 오류: {drive.signInError}</p>
           )}
           {drive.initError && (
-            <p className="text-xs text-check-600">⚠ 초기화 오류: {drive.initError}</p>
+            <p className="mt-2 mb-0 text-xs text-terra-dark">초기화 오류: {drive.initError}</p>
           )}
 
           {/* 진단 — 두 기기에서 비교해보면 동기화 안 되는 원인 파악 가능 */}
-          <details className="text-[11px] text-ink-500 mt-2">
-            <summary className="cursor-pointer">동기화 진단 정보</summary>
-            <dl className="mt-2 grid grid-cols-[80px_1fr] gap-y-1">
-              <dt className="text-ink-400">앱 주소</dt>
-              <dd className="text-ink-700 break-all">{origin}</dd>
-              <dt className="text-ink-400">계정</dt>
-              <dd className="text-ink-700 break-all">{drive.user?.email ?? '(미로그인)'}</dd>
-              <dt className="text-ink-400">Drive 파일 ID</dt>
-              <dd className="text-ink-700 break-all">{remoteFileId ?? '(아직 없음)'}</dd>
-              <dt className="text-ink-400">로컬 메모</dt>
-              <dd className="text-ink-700">{memos.length}개</dd>
-              <dt className="text-ink-400">상태</dt>
-              <dd className="text-ink-700">{sync.status}</dd>
+          <details className="text-[11px] text-char-mute mt-2">
+            <summary className="cursor-pointer py-1">동기화 진단 정보</summary>
+            <dl className="mt-1 mb-0 grid grid-cols-[80px_1fr] gap-y-1">
+              <dt>앱 주소</dt>
+              <dd className="m-0 text-char-soft break-all">{origin}</dd>
+              <dt>계정</dt>
+              <dd className="m-0 text-char-soft break-all">{drive.user?.email ?? '(미로그인)'}</dd>
+              <dt>Drive 파일 ID</dt>
+              <dd className="m-0 text-char-soft break-all">{remoteFileId ?? '(아직 없음)'}</dd>
+              <dt>로컬 메모</dt>
+              <dd className="m-0 text-char-soft">{memos.length}개</dd>
+              <dt>상태</dt>
+              <dd className="m-0 text-char-soft">{sync.status}</dd>
             </dl>
-            <p className="mt-2 text-ink-400 leading-relaxed">
+            <p className="mt-2 mb-0 leading-relaxed">
               ※ <b>두 기기에서 같은 계정 / 같은 앱 주소</b>가 아니면 동기화 안 됩니다.
               위 값을 노트북·모바일에서 비교해보세요.
             </p>
           </details>
-        </div>
-      </section>
+        </Card>
 
-      <section className="px-5 mt-4">
-        <div className="rounded-xl bg-white shadow-soft border border-ink-200/80 p-5 space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-ink-900">날짜 알림</h3>
-            <span className="text-[11px] text-ink-400">
-              {notifPerm === 'granted' ? '✓ 켜짐' :
-                notifPerm === 'denied' ? '차단됨' :
-                  notifPerm === 'unsupported' ? '지원 안 됨' : '꺼짐'}
-            </span>
-          </div>
-          <p className="text-xs text-ink-500 leading-relaxed">
-            할 일·체크리스트에 날짜를 설정하면 그 날짜에 앱 상단 배너로 알려줘요.
+        {/* 날짜 알림 */}
+        <Card
+          Icon={BellIcon}
+          title="날짜 알림"
+          status={
+            notifPerm === 'granted' ? <Chip cls={OK}>켜짐</Chip>
+              : notifPerm === 'denied' ? <Chip cls={WARN}>차단됨</Chip>
+                : notifPerm === 'unsupported' ? <Chip cls={OFF}>지원 안 됨</Chip>
+                  : <Chip cls={OFF}>꺼짐</Chip>
+          }
+        >
+          <p className="mt-2 mb-0 text-xs leading-[1.55] text-char-soft">
+            할 일·체크리스트에 날짜를 설정하면 그 날짜에 앱 상단 배너로 알려줘요. 확인을 누른 알림은 다시 나오지 않아요.
             아래 권한을 허용하면 앱이 닫혀 있어도 시스템 알림으로 표시됩니다.
           </p>
           {notifPerm === 'default' && (
-            <button
-              onClick={() => void handleEnableNotifications()}
-              className="w-full px-4 py-3 rounded-xl bg-ink-900 text-white font-medium"
-            >
+            <button type="button" onClick={() => void handleEnableNotifications()} className={PRIMARY}>
               시스템 알림 허용
             </button>
           )}
           {notifPerm === 'denied' && (
-            <p className="text-xs text-check-600 bg-check-50 border border-check-100 rounded-lg p-2">
+            <p className="mt-2 mb-0 text-xs text-terra-ink bg-terra-tint rounded-lg p-2">
               브라우저에서 알림이 차단되어 있어요. 주소창의 자물쇠 아이콘 → 알림 권한을 허용으로 바꾸면 다시 사용할 수 있습니다.
             </p>
           )}
           {notifPerm === 'unsupported' && (
-            <p className="text-xs text-ink-500">이 브라우저는 시스템 알림을 지원하지 않아요. 앱 안에서는 그래도 배너로 보여드려요.</p>
+            <p className="mt-2 mb-0 text-xs text-char-mute">이 브라우저는 시스템 알림을 지원하지 않아요. 앱 안에서는 그래도 배너로 보여드려요.</p>
           )}
-        </div>
-      </section>
+        </Card>
 
-      <section className="px-5 mt-4">
-        <div className="rounded-xl bg-white shadow-soft border border-ink-200/80 p-5 space-y-3">
-          <h3 className="font-semibold text-ink-900">로컬 백업</h3>
-          <button
-            onClick={exportJson}
-            className="w-full px-4 py-3 rounded-xl bg-white text-ink-900 font-medium border border-ink-200/80"
-          >
-            JSON 으로 내보내기
-          </button>
-          <p className="text-xs text-ink-500 leading-relaxed">
+        {/* 앱으로 설치 — 이미 별도 창으로 실행 중이면 숨김 */}
+        {!isStandalone && (
+          <Card Icon={AppIcon} title="앱으로 설치" status={installed ? <Chip cls={OK}>설치됨</Chip> : null}>
+            <p className="mt-2 mb-0 text-xs leading-[1.55] text-char-soft">
+              브라우저 창이 아닌 <b>별도의 작은 창</b>으로 떠서 다른 작업과 함께 쓸 수 있어요.
+            </p>
+            {installed ? (
+              <p className="mt-2 mb-0 text-xs font-bold text-sage-ink">설치 완료 — 시작 메뉴에서 열어보세요.</p>
+            ) : canInstall ? (
+              <button type="button" onClick={() => void install()} className={OUTLINE}>
+                바로 설치하기
+              </button>
+            ) : (
+              <details className="mt-2 text-xs text-char-soft">
+                <summary className="cursor-pointer py-1 font-semibold">수동 설치 방법 보기</summary>
+                <ul className="mt-1 mb-0 space-y-1.5 pl-4 list-disc">
+                  <li><b>Chrome / Edge (PC)</b>: 주소창 오른쪽 끝의 <b>설치</b> 아이콘 클릭, 또는 메뉴 → "앱 설치"</li>
+                  <li><b>Safari (iPhone)</b>: 공유 → "홈 화면에 추가"</li>
+                  <li><b>Chrome (Android)</b>: 메뉴 → "앱 설치" / "홈 화면에 추가"</li>
+                </ul>
+              </details>
+            )}
+          </Card>
+        )}
+
+        {/* 로컬 백업 */}
+        <Card Icon={DownloadIcon} title="로컬 백업" status={null}>
+          <p className="mt-2 mb-0 text-xs leading-[1.55] text-char-soft">
             모든 메모를 한 파일로 다운로드해서 따로 보관할 수 있어요.
           </p>
-        </div>
-      </section>
-    </div>
+          <button type="button" onClick={exportJson} className={OUTLINE}>
+            JSON 으로 내보내기
+          </button>
+        </Card>
+      </div>
+    </Sheet>
+  )
+}
+
+function Chip({ cls, children }: { cls: string; children: ReactNode }) {
+  return <span className={['shrink-0 px-[9px] py-[3px] rounded-full text-[10.5px] font-bold', cls].join(' ')}>{children}</span>
+}
+
+function Card({
+  Icon, title, status, children,
+}: {
+  Icon: ComponentType<SVGProps<SVGSVGElement>>
+  title: string
+  status: ReactNode
+  children: ReactNode
+}) {
+  return (
+    <section className="rounded-xl bg-sheet border border-line px-3.5 py-3">
+      <div className="flex items-center gap-2.5">
+        <span aria-hidden className="w-8 h-8 shrink-0 rounded-lg bg-sand-tint grid place-items-center">
+          <Icon width={17} height={17} />
+        </span>
+        <h2 className="m-0 flex-1 text-[14.5px] font-bold">{title}</h2>
+        {status}
+      </div>
+      {children}
+    </section>
   )
 }
 
