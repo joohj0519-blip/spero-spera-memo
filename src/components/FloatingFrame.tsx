@@ -4,7 +4,9 @@ import { BottomNav } from './BottomNav'
 import { ReminderBanner } from './ReminderBanner'
 import { useStandalone } from '../hooks/usePwa'
 
-const FRAME_W = 500
+// [2026-08-20] 앱 고정 폭 500 -> 485px (15px 축소). 데스크톱 플로팅 창과
+// 모바일/설치형 최대 폭 두 군데를 같은 값으로 맞춰야 하므로 아래 max-w 도 함께 변경
+const FRAME_W = 485
 const FRAME_H = 930
 const TOP_OFFSET = 16
 
@@ -51,11 +53,23 @@ export function FloatingFrame({ children }: { children: ReactNode }) {
 
   // 1) 모바일 OR 2) 별도 창으로 설치되어 standalone 으로 실행 중
   //    → 둘 다 윈도우 전체를 메모 화면으로 사용
+  //
+  // [2026-08-20 수정] 하단 네비게이션 고정
+  //  - 문제: min-h-screen 이라 내용이 길어지면 페이지 전체가 늘어나고,
+  //          그만큼 하단 네비가 화면 밖으로 밀려 스크롤을 끝까지 내려야 탭이 보였음
+  //  - 해결: h-dvh 로 바깥 높이를 '보이는 화면 한 칸'에 고정하고,
+  //          가운데 내용 영역에만 overflow-y-auto 를 줘서 내용만 스크롤되게 함
+  //          (배너/네비는 스크롤 영역 바깥이라 항상 제자리에 남음)
+  //  - h-screen(100vh) 대신 h-dvh 를 쓰는 이유: 모바일 브라우저 주소창이 접혔다 펴질 때
+  //          100vh 는 실제 보이는 높이보다 커져서 네비 아랫부분이 잘리기 때문
   if (!isDesktop || isStandalone) {
     return (
-      <div className="min-h-screen flex flex-col max-w-[500px] mx-auto w-full">
+      <div className="h-dvh flex flex-col max-w-[485px] mx-auto w-full">
         <ReminderBanner />
-        <div className="flex-1 flex flex-col">{children}</div>
+        {/* min-h-0 필수: flex 자식의 기본값 min-height:auto 때문에 스크롤이 안 잡히는 문제 방지 */}
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain flex flex-col">
+          {children}
+        </div>
         <BottomNav />
       </div>
     )

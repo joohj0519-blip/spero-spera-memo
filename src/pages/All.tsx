@@ -40,7 +40,7 @@ export default function All() {
   }, [memos, filter, q])
 
   return (
-    <div className="pb-32">
+    <div className="pb-2">
       <TopBar
         title={
           <span className="inline-flex items-baseline gap-2">
@@ -111,7 +111,7 @@ export default function All() {
         })}
       </div>
 
-      <div className="px-5 mt-4 space-y-1.5">
+      <div className="px-5 mt-4 space-y-0.5 pb-4">
         {filtered.length === 0 ? (
           <p className="text-center text-ink-500 py-12">
             {q ? '검색 결과가 없어요.' : '메모가 없어요.'}
