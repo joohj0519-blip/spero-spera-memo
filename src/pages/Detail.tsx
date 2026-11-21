@@ -129,7 +129,15 @@ export default function Detail() {
             <div className="text-xs font-semibold text-ink-500 mb-2 px-2">
               {memo.type === 'checklist' ? '체크리스트' : '세부 할 일'}
             </div>
-            {memo.items.map((item, idx) => (
+            {/* 체크한(완료) 항목은 아래로, 아직 남은 항목은 위로 보여 준다.
+                - 저장된 순서 자체는 바꾸지 않고 '보이는 순서'만 정렬한다.
+                  → 체크를 다시 풀면 원래 있던 자리로 돌아오고, 수정 화면의 순서도 그대로 유지됨
+                - idx(원래 위치)를 같이 들고 다니는 이유: toggleItem 이 원래 위치로 항목을 찾기 때문
+                - sort 는 순서가 같은 것끼리는 기존 순서를 지켜 주므로(안정 정렬) 묶음 안의 순서는 그대로 */}
+            {memo.items
+              .map((item, idx) => ({ item, idx }))
+              .sort((a, b) => Number(a.item.checked) - Number(b.item.checked))
+              .map(({ item, idx }) => (
               <button
                 key={item.id}
                 onClick={() => void toggleItem(idx)}
